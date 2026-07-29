@@ -113,24 +113,27 @@ position = Vector2(1060, 520)
 [node name="StudyScribe" parent="Interactables" instance=ExtResource("9_prop")]
 position = Vector2(480, 510)
 PromptName = "Study Scribe"
+Role = 1
 NarrRailStoryPath = "res://Stories/DevPrototype/study_scribe_hello.nrstory"
 SpeakerId = "StudyScribe"
-IsNpcCharacter = true
 
 [node name="ManuscriptDesk" parent="Interactables" instance=ExtResource("9_prop")]
 position = Vector2(720, 505)
 PromptName = "Manuscript Desk"
+Role = 3
 NarrRailStoryPath = "res://Stories/DevPrototype/study_manuscript.nrstory"
 SpeakerId = "ManuscriptDesk"
 
 [node name="Bookshelf" parent="Interactables" instance=ExtResource("9_prop")]
 position = Vector2(780, 260)
 PromptName = "Bookshelf"
+Role = 2
 ExamineText = "书架上塞满未装订的折页。有人用炭笔在侧板写了「勿借出」。"
 
 [node name="InkPot" parent="Interactables" instance=ExtResource("9_prop")]
 position = Vector2(360, 520)
 PromptName = "Ink Pot"
+Role = 2
 ExamineText = "陶砚里的墨已结了一层薄壳。旁边还有半截鹅毛笔。"
 
 [node name="ToVillage" parent="Interactables" instance=ExtResource("6_hotspot")]

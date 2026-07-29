@@ -6,7 +6,7 @@ var _phase := 0
 var _player: Node
 var _presenter: Node
 var _elder: Node
-var _keyboard_start := Vector2.ZERO
+var _junction_start := Vector2.ZERO
 var _click_target := Vector2(1750, 520)
 var _click_start_distance := 0.0
 var _click_started_ms := 0
@@ -37,16 +37,19 @@ func _process(_delta: float) -> bool:
 			if not _player.get("UsesPathNetwork"):
 				_fail("player is not bound to Path Network")
 				return false
-			_keyboard_start = _player.get("global_position")
-			Input.action_press("move_right")
+			_junction_start = _player.get("global_position")
+			Input.action_press("move_up")
 			_phase = 1
 		1:
 			if _frames < 80:
 				return false
-			Input.action_release("move_right")
-			var moved: float = _player.get("global_position").distance_to(_keyboard_start)
-			if moved < 20.0:
-				_fail("WASD did not move the player along the network")
+			Input.action_release("move_up")
+			var branch_position: Vector2 = _player.get("global_position")
+			if int(_player.get("CurrentPathId")) != 1:
+				_fail("move_up at the Junction chose path %s instead of BranchPath" % _player.get("CurrentPathId"))
+				return false
+			if branch_position.distance_to(_junction_start) < 30.0:
+				_fail("move_up at the Junction did not enter the rising branch: start=%s end=%s" % [_junction_start, branch_position])
 				return false
 			_phase = 2
 		2:
@@ -87,6 +90,6 @@ func _process(_delta: float) -> bool:
 	return false
 
 func _fail(message: String) -> void:
-	Input.action_release("move_right")
+	Input.action_release("move_up")
 	push_error("path controls smoke: " + message)
 	quit(1)

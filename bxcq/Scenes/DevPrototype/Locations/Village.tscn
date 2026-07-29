@@ -117,26 +117,28 @@ position = Vector2(1500, 520)
 [node name="VillageElder" parent="Interactables" unique_id=665312318 instance=ExtResource("6_prop")]
 position = Vector2(400, 520)
 PromptName = "Village Elder"
+Role = 1
 NarrRailStoryPath = "res://Stories/DevPrototype/village_elder_hello.nrstory"
 SpeakerId = "VillageElder"
-IsNpcCharacter = true
 
 [node name="Traveler" parent="Interactables" unique_id=1255842202 instance=ExtResource("6_prop")]
 position = Vector2(1100, 520)
 PromptName = "Traveler"
+Role = 1
 NarrRailStoryPath = "res://Stories/DevPrototype/village_traveler_hello.nrstory"
 SpeakerId = "Traveler"
-IsNpcCharacter = true
 
 [node name="NoticeBoard" parent="Interactables" unique_id=1547697372 instance=ExtResource("6_prop")]
 position = Vector2(1450, 520)
 PromptName = "Notice Board"
+Role = 3
 NarrRailStoryPath = "res://Stories/DevPrototype/notice_board_clue.nrstory"
 SpeakerId = "NoticeBoard"
 
 [node name="VillageWell" parent="Interactables" unique_id=500307211 instance=ExtResource("6_prop")]
 position = Vector2(900, 520)
 PromptName = "Village Well"
+Role = 2
 ExamineText = "一口旧井。井沿被磨得很光滑，水面映着天光——没什么特别的，只是村子日常的一部分。"
 
 [node name="ToChurch" parent="Interactables" unique_id=1309138385 instance=ExtResource("7_hotspot")]

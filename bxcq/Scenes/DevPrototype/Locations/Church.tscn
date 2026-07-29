@@ -113,24 +113,27 @@ position = Vector2(1080, 525)
 [node name="ChurchNovice" parent="Interactables" instance=ExtResource("9_prop")]
 position = Vector2(400, 515)
 PromptName = "Church Novice"
+Role = 1
 NarrRailStoryPath = "res://Stories/DevPrototype/church_novice_hello.nrstory"
 SpeakerId = "ChurchNovice"
-IsNpcCharacter = true
 
 [node name="ChurchAltar" parent="Interactables" instance=ExtResource("9_prop")]
 position = Vector2(640, 500)
 PromptName = "Church Altar"
+Role = 2
 ExamineText = "祭坛上落着一层薄灰。烛台空着，却仍有一股陈旧的乳香气味——像是有人不久前才来过。"
 
 [node name="Reliquary" parent="Interactables" instance=ExtResource("9_prop")]
 position = Vector2(860, 270)
 PromptName = "Reliquary"
+Role = 3
 NarrRailStoryPath = "res://Stories/DevPrototype/church_reliquary_clue.nrstory"
 SpeakerId = "Reliquary"
 
 [node name="Pew" parent="Interactables" instance=ExtResource("9_prop")]
 position = Vector2(280, 530)
 PromptName = "Wooden Pew"
+Role = 2
 ExamineText = "长椅被磨得很光滑。扶手上刻着几个模糊的姓名缩写。"
 
 [node name="ToVillage" parent="Interactables" instance=ExtResource("6_hotspot")]

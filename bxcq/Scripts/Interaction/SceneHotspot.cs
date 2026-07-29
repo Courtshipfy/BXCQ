@@ -17,6 +17,7 @@ public partial class SceneHotspot : Area2D, IInteractable
 
 	private Color _baseModulate = Colors.White;
 	private bool _hovering;
+	public string DisplayName => PromptName;
 
 	public override void _Ready()
 	{
@@ -75,6 +76,10 @@ public partial class SceneHotspot : Area2D, IInteractable
 		}
 
 		return true;
+	}
+
+	public void PrepareInteraction(PlayerController player)
+	{
 	}
 
 	public void Interact(PlayerController player)

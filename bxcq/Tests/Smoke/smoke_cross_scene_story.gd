@@ -1,5 +1,5 @@
 extends SceneTree
-## Learning point 3.4: cross-scene quest chain smoke.
+## Cross-scene story-state chain smoke.
 ## Village notice → Study manuscript → Elder unlocks church → Church altar examine.
 
 var _frames := 0

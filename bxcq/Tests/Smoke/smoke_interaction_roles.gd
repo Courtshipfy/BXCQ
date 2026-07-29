@@ -25,6 +25,7 @@ func _process(_delta: float) -> bool:
 			var elder: Node = null
 			var well: Node = null
 			var traveler: Node = null
+			var notice_board: Node = null
 			for node in root.get_tree().get_nodes_in_group("interactables"):
 				match String(node.name):
 					"VillageElder":
@@ -33,8 +34,10 @@ func _process(_delta: float) -> bool:
 						well = node
 					"Traveler":
 						traveler = node
-			if elder == null or well == null or traveler == null:
-				push_error("roles smoke: missing Elder/Well/Traveler")
+					"NoticeBoard":
+						notice_board = node
+			if elder == null or well == null or traveler == null or notice_board == null:
+				push_error("roles smoke: missing Elder/Well/Traveler/NoticeBoard")
 				quit(1)
 				return false
 			if not bool(elder.get("IsPerson")):
@@ -49,7 +52,15 @@ func _process(_delta: float) -> bool:
 				push_error("roles smoke: Traveler should be IsPerson")
 				quit(1)
 				return false
-			print("roles smoke: roles OK person/examine")
+			if not bool(notice_board.get("IsInvestigateProp")):
+				push_error("roles smoke: NoticeBoard should be IsInvestigateProp")
+				quit(1)
+				return false
+			if int(elder.get("Role")) != 1 or int(well.get("Role")) != 2 or int(notice_board.get("Role")) != 3:
+				push_error("roles smoke: roles must be explicit Person/Examine/Investigate values")
+				quit(1)
+				return false
+			print("roles smoke: roles OK person/examine/investigate")
 			# Examine channel
 			var anchor: Vector2 = well.get("AnchorGlobalPosition")
 			if not presenter.call("ShowExamine", anchor, "查看", String(well.get("ExamineText"))):

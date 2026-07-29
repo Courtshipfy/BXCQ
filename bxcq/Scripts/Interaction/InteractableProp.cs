@@ -11,26 +11,26 @@ public partial class InteractableProp : Area2D, IInteractable, ISpeakerAnchor
 	private static readonly Color NearPerson = new(1.12f, 1.05f, 0.88f, 1f);
 
 	[Export] public string PromptName { get; set; } = "Object";
+	[Export] public InteractionRole Role { get; set; } = InteractionRole.Unconfigured;
 	[Export] public float ApproachOffsetX { get; set; } = 48f;
 	[Export] public string NarrRailStoryPath { get; set; } = "";
 	[Export] public string ExamineText { get; set; } = "";
 	[Export] public string SpeakerId { get; set; } = "";
 	[Export] public Vector2 BubbleOffset { get; set; } = new(0, -52);
 	[Export] public float ProximityHintRange { get; set; } = 110f;
-	/// <summary>Mark NPCs for talk affordance (face-toward, 交谈 label, near hint). Notice boards stay false.</summary>
-	[Export] public bool IsNpcCharacter { get; set; }
 
 	private Color _baseModulate = Colors.White;
 	private Vector2 _baseScale = Vector2.One;
 	private bool _hovering;
+	private bool _configurationValid;
 	private Label _label = null!;
 
 	public Vector2 AnchorGlobalPosition => GlobalPosition + BubbleOffset;
+	public string DisplayName => PromptName;
 
-	/// <summary>Person: an NPC that starts a full NarrRail conversation.</summary>
-	public bool IsPerson => IsNpcCharacter && !IsExamineProp;
-
-	public bool IsExamineProp => !string.IsNullOrWhiteSpace(ExamineText);
+	public bool IsPerson => Role == InteractionRole.Person;
+	public bool IsExamineProp => Role == InteractionRole.Examine;
+	public bool IsInvestigateProp => Role == InteractionRole.Investigate;
 
 	public override void _Ready()
 	{
@@ -41,6 +41,7 @@ public partial class InteractableProp : Area2D, IInteractable, ISpeakerAnchor
 		InputPickable = true;
 		_baseModulate = Modulate;
 		_baseScale = Scale;
+		_configurationValid = ValidateConfiguration();
 		AddToGroup("interactables");
 		if (!string.IsNullOrWhiteSpace(SpeakerId))
 		{
@@ -57,7 +58,15 @@ public partial class InteractableProp : Area2D, IInteractable, ISpeakerAnchor
 	public bool CanInteract(PlayerController player)
 	{
 		var gameState = GetNodeOrNull<GameState>("/root/GameState");
-		return gameState == null || !gameState.IsDialogueBlocking;
+		return _configurationValid && (gameState == null || !gameState.IsDialogueBlocking);
+	}
+
+	public void PrepareInteraction(PlayerController player)
+	{
+		if (IsPerson)
+		{
+			player.FaceToward(GlobalPosition);
+		}
 	}
 
 	public void Interact(PlayerController player)
@@ -108,22 +117,35 @@ public partial class InteractableProp : Area2D, IInteractable, ISpeakerAnchor
 
 	public string DescribeRole()
 	{
-		if (IsExamineProp)
+		return Role switch
 		{
-			return "examine";
+			InteractionRole.Person => "person",
+			InteractionRole.Examine => "examine",
+			InteractionRole.Investigate => "investigate",
+			_ => "unconfigured",
+		};
+	}
+
+	private bool ValidateConfiguration()
+	{
+		var hasStory = !string.IsNullOrWhiteSpace(NarrRailStoryPath);
+		var hasExamineText = !string.IsNullOrWhiteSpace(ExamineText);
+		var valid = Role switch
+		{
+			InteractionRole.Person => hasStory && !hasExamineText && !string.IsNullOrWhiteSpace(SpeakerId),
+			InteractionRole.Examine => !hasStory && hasExamineText,
+			InteractionRole.Investigate => hasStory && !hasExamineText,
+			_ => false,
+		};
+
+		if (!valid)
+		{
+			GD.PushError(
+				$"InteractableProp '{GetPath()}' has invalid {Role} configuration: " +
+				$"story={hasStory}, examine_text={hasExamineText}, speaker='{SpeakerId}'.");
 		}
 
-		if (IsPerson)
-		{
-			return "person";
-		}
-
-		if (!string.IsNullOrWhiteSpace(NarrRailStoryPath))
-		{
-			return "investigate";
-		}
-
-		return "prop";
+		return valid;
 	}
 
 	private void OnMouseEntered()

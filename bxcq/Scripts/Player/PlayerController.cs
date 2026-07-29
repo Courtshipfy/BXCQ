@@ -33,6 +33,7 @@ public partial class PlayerController : CharacterBody2D
 	public string LastInteractionName { get; private set; } = "-";
 	public bool UsesPathNetwork => _motor != null;
 	public bool HasClickRoute => _motor?.HasClickRoute ?? false;
+	public int CurrentPathId => _motor?.CurrentPose.PathId ?? -1;
 
 	public override void _Ready()
 	{
@@ -184,12 +185,7 @@ public partial class PlayerController : CharacterBody2D
 	private void HandlePrimaryClick(Vector2 worldPosition)
 	{
 		var hit = PickInteractableAt(worldPosition);
-		var hitName = hit switch
-		{
-			InteractableProp prop => prop.PromptName,
-			SceneHotspot door => door.PromptName,
-			_ => "none",
-		};
+		var hitName = hit?.DisplayName ?? "none";
 		GD.Print($"click at {worldPosition} hit={hitName}");
 		if (hit != null)
 		{
@@ -238,14 +234,8 @@ public partial class PlayerController : CharacterBody2D
 		_motor.SetClickGoal(approachOnPath);
 		_inputReader.SetClickTarget(approachOnPath);
 
-		var name = target switch
-		{
-			InteractableProp prop => prop.PromptName,
-			SceneHotspot door => door.PromptName,
-			_ => "interactable",
-		};
 		GD.Print(
-			$"Smart interact [{name}]: preferred={preferred} → path={approachOnPath} " +
+			$"Smart interact [{target.DisplayName}]: preferred={preferred} → path={approachOnPath} " +
 			$"legs≈{_motor.ClickRouteLegCount} routeLen≈{_motor.RemainingRouteLength():F0}");
 		return true;
 	}
@@ -277,18 +267,9 @@ public partial class PlayerController : CharacterBody2D
 		_motor.ClearClickRoute();
 		ClearPendingInteractable();
 
-		if (target is InteractableProp { IsPerson: true } person)
-		{
-			FaceToward(person.GlobalPosition);
-		}
-
+		target.PrepareInteraction(this);
 		target.Interact(this);
-		LastInteractionName = target switch
-		{
-			InteractableProp prop => prop.PromptName,
-			SceneHotspot door => door.PromptName,
-			_ => LastInteractionName,
-		};
+		LastInteractionName = target.DisplayName;
 	}
 
 	/// <summary>Turn to face a world point on the X axis.</summary>
