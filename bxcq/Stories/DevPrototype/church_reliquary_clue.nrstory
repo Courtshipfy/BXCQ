@@ -1,0 +1,56 @@
+meta:
+  schemaVersion: 1
+  storyId: church_reliquary_clue
+  entryNodeId: N_Look
+
+variables:
+  - name: has_church_relic_clue
+    type: Bool
+    scope: Session
+    defaultValue: "false"
+
+nodes:
+  - nodeId: N_Look
+    nodeType: Dialogue
+    dialogue:
+      speakerId: Reliquary
+      textKey: 圣龛木纹里刻着一行细字：抄本与火……勿同日而语。
+
+  - nodeId: N_Set
+    nodeType: SetVariable
+    actions:
+      - actionType: Set
+        variable:
+          name: has_church_relic_clue
+          type: Bool
+          scope: Session
+        value: "true"
+
+  - nodeId: N_Done
+    nodeType: Dialogue
+    dialogue:
+      speakerId: Reliquary
+      textKey: （你记下了这句。或许该再问问见习修士。）
+
+  - nodeId: N_End
+    nodeType: End
+
+edges:
+  - sourceNodeId: N_Look
+    targetNodeId: N_Set
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_Set
+    targetNodeId: N_Done
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_Done
+    targetNodeId: N_End
+    priority: 0
+    condition:
+      logic: All
+      terms: []

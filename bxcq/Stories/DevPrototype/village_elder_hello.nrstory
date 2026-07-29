@@ -1,0 +1,233 @@
+meta:
+  schemaVersion: 1
+  storyId: village_elder_hello
+  entryNodeId: N_Gate
+
+variables:
+  - name: has_clue_manuscript
+    type: Bool
+    scope: Session
+    defaultValue: "false"
+  - name: found_manuscript
+    type: Bool
+    scope: Session
+    defaultValue: "false"
+
+nodes:
+  - nodeId: N_Gate
+    nodeType: Condition
+    condition:
+      branches:
+        - label: found_manuscript
+          logic: All
+          terms:
+            - variable:
+                name: found_manuscript
+                type: Bool
+                scope: Session
+              operator: "=="
+              compareValue: "true"
+        - label: has_clue
+          logic: All
+          terms:
+            - variable:
+                name: has_clue_manuscript
+                type: Bool
+                scope: Session
+              operator: "=="
+              compareValue: "true"
+
+  - nodeId: N_FoundGreeting
+    nodeType: Dialogue
+    dialogue:
+      speakerId: VillageElder
+      textKey: 手稿……你真的找到了。好。北边教堂的门，我替你开着。
+
+  - nodeId: N_UnlockChurch
+    nodeType: EmitEvent
+    eventType: set_hotspot_enabled
+    params:
+      hotspotId: to_church
+      enabled: true
+
+  - nodeId: N_FoundHint
+    nodeType: Dialogue
+    dialogue:
+      speakerId: VillageElder
+      textKey: 去教堂看一眼吧。那里或许还藏着旧事。
+
+  - nodeId: N_ClueGreeting
+    nodeType: Dialogue
+    dialogue:
+      speakerId: VillageElder
+      textKey: 哦？你看到告示了。那份手稿……书房的门现在对你开着。
+
+  - nodeId: N_ClueHint
+    nodeType: Dialogue
+    dialogue:
+      speakerId: VillageElder
+      textKey: 去东边书房看看吧。找到手稿再回来告诉我。
+
+  - nodeId: N_Greeting
+    nodeType: Dialogue
+    dialogue:
+      speakerId: VillageElder
+      textKey: 旅人，欢迎来到村庄。
+
+  - nodeId: N_Ask
+    nodeType: Dialogue
+    dialogue:
+      speakerId: VillageElder
+      textKey: 你此行所求为何？
+
+  - nodeId: N_LookHint
+    nodeType: Dialogue
+    dialogue:
+      speakerId: VillageElder
+      textKey: 先朝东望一眼——教堂就在那边。
+
+  - nodeId: N_FadePulse
+    nodeType: EmitEvent
+    eventType: presentation.fade
+    params:
+      duration: 0.45
+
+  - nodeId: N_LookEast
+    nodeType: EmitEvent
+    eventType: switch_camera_zone
+    params:
+      zoneName: East
+
+  - nodeId: N_AfterLook
+    nodeType: Dialogue
+    dialogue:
+      speakerId: VillageElder
+      textKey: 看清方位再上路。你打算怎么走？
+
+  - nodeId: N_Choice
+    nodeType: Choice
+    choices:
+      - textKey: 我想去教堂看看。
+        targetNodeId: N_Church
+      - textKey: 只是路过，打听路罢了。
+        targetNodeId: N_Pass
+
+  - nodeId: N_Church
+    nodeType: Dialogue
+    dialogue:
+      speakerId: VillageElder
+      textKey: 北边那扇门通往教堂。路上走稳些。
+
+  - nodeId: N_UnlockChurchEarly
+    nodeType: EmitEvent
+    eventType: set_hotspot_enabled
+    params:
+      hotspotId: to_church
+      enabled: true
+
+  - nodeId: N_Pass
+    nodeType: Dialogue
+    dialogue:
+      speakerId: VillageElder
+      textKey: 也好。村庄不大，慢慢走。
+
+  - nodeId: N_End
+    nodeType: End
+
+edges:
+  - sourceNodeId: N_Gate
+    targetNodeId: N_FoundGreeting
+    priority: 0
+    sourceHandle: condition-0
+  - sourceNodeId: N_Gate
+    targetNodeId: N_ClueGreeting
+    priority: 0
+    sourceHandle: condition-1
+  - sourceNodeId: N_Gate
+    targetNodeId: N_Greeting
+    priority: 0
+    sourceHandle: condition-fallback
+  - sourceNodeId: N_FoundGreeting
+    targetNodeId: N_UnlockChurch
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_UnlockChurch
+    targetNodeId: N_FoundHint
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_FoundHint
+    targetNodeId: N_End
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_ClueGreeting
+    targetNodeId: N_ClueHint
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_ClueHint
+    targetNodeId: N_End
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_Greeting
+    targetNodeId: N_Ask
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_Ask
+    targetNodeId: N_LookHint
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_LookHint
+    targetNodeId: N_FadePulse
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_FadePulse
+    targetNodeId: N_LookEast
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_LookEast
+    targetNodeId: N_AfterLook
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_AfterLook
+    targetNodeId: N_Choice
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_Church
+    targetNodeId: N_UnlockChurchEarly
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_UnlockChurchEarly
+    targetNodeId: N_End
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_Pass
+    targetNodeId: N_End
+    priority: 0
+    condition:
+      logic: All
+      terms: []

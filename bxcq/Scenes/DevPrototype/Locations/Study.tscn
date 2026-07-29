@@ -1,0 +1,224 @@
+[gd_scene load_steps=18 format=3 uid="uid://locationstudy01"]
+
+[ext_resource type="Script" path="res://Scripts/World/LocationScene.cs" id="1_loc"]
+[ext_resource type="Script" path="res://Scripts/Input/MovementInputReader.cs" id="2_input"]
+[ext_resource type="PackedScene" path="res://Scenes/Gameplay/Player.tscn" id="3_player"]
+[ext_resource type="Script" path="res://Scripts/Camera/CameraDirector.cs" id="4_director"]
+[ext_resource type="Script" path="res://Scripts/Camera/CameraZone.cs" id="5_zone"]
+[ext_resource type="PackedScene" path="res://Scenes/Gameplay/SceneHotspot.tscn" id="6_hotspot"]
+[ext_resource type="Script" path="res://Scripts/Path/PathNetworkHost.cs" id="7_pathhost"]
+[ext_resource type="Script" path="res://Scripts/Debug/PathNetworkGizmoDrawer.cs" id="8_gizmo"]
+[ext_resource type="PackedScene" uid="uid://c2yve4btag1j5" path="res://Scenes/Gameplay/InteractableProp.tscn" id="9_prop"]
+[ext_resource type="Script" path="res://Scripts/NarrRail/DialoguePresenter.cs" id="10_presenter"]
+[ext_resource type="Resource" path="res://Resources/Ui/DialogueUiDefaults.tres" id="11_defaults"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_h"]
+size = Vector2(1280, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_v"]
+size = Vector2(40, 720)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_zone"]
+size = Vector2(640, 720)
+
+[sub_resource type="Curve2D" id="Curve2D_main"]
+_data = {
+"points": PackedVector2Array(0, 0, 35, 0, 140, 525, -30, -5, 40, -8, 400, 510, -40, -5, 40, 5, 640, 505, -40, 8, 35, 5, 900, 515, -30, 5, 0, 0, 1140, 525)
+}
+point_count = 5
+
+[sub_resource type="Curve2D" id="Curve2D_branch"]
+_data = {
+"points": PackedVector2Array(0, 0, 15, -25, 640, 505, -10, -20, 20, -15, 700, 360, -10, -10, 0, 0, 780, 250)
+}
+point_count = 3
+
+[node name="Study" type="Node2D"]
+script = ExtResource("1_loc")
+location_display_name = "Study"
+
+[node name="MovementInputReader" type="Node2D" parent="."]
+script = ExtResource("2_input")
+
+[node name="Backdrop" type="Node2D" parent="."]
+
+[node name="WestBg" type="ColorRect" parent="Backdrop"]
+offset_right = 640.0
+offset_bottom = 720.0
+mouse_filter = 2
+color = Color(0.17, 0.13, 0.09, 1)
+
+[node name="EastBg" type="ColorRect" parent="Backdrop"]
+offset_left = 640.0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+color = Color(0.2, 0.15, 0.1, 1)
+
+[node name="Ground" type="ColorRect" parent="Backdrop"]
+offset_top = 470.0
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+color = Color(0.32, 0.24, 0.16, 1)
+
+[node name="Title" type="Label" parent="Backdrop"]
+offset_left = 540.0
+offset_top = 100.0
+offset_right = 740.0
+offset_bottom = 140.0
+mouse_filter = 2
+text = "STUDY"
+horizontal_alignment = 1
+
+[node name="Walls" type="Node2D" parent="."]
+
+[node name="Top" type="StaticBody2D" parent="Walls"]
+position = Vector2(640, -20)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/Top"]
+shape = SubResource("RectangleShape2D_wall_h")
+
+[node name="Bottom" type="StaticBody2D" parent="Walls"]
+position = Vector2(640, 740)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/Bottom"]
+shape = SubResource("RectangleShape2D_wall_h")
+
+[node name="Left" type="StaticBody2D" parent="Walls"]
+position = Vector2(-20, 360)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/Left"]
+shape = SubResource("RectangleShape2D_wall_v")
+
+[node name="Right" type="StaticBody2D" parent="Walls"]
+position = Vector2(1300, 360)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/Right"]
+shape = SubResource("RectangleShape2D_wall_v")
+
+[node name="Spawns" type="Node2D" parent="."]
+
+[node name="default" type="Marker2D" parent="Spawns"]
+position = Vector2(640, 520)
+
+[node name="from_village" type="Marker2D" parent="Spawns"]
+position = Vector2(200, 520)
+
+[node name="from_church" type="Marker2D" parent="Spawns"]
+position = Vector2(1060, 520)
+
+[node name="Interactables" type="Node2D" parent="."]
+
+[node name="StudyScribe" parent="Interactables" instance=ExtResource("9_prop")]
+position = Vector2(480, 510)
+PromptName = "Study Scribe"
+NarrRailStoryPath = "res://Stories/DevPrototype/study_scribe_hello.nrstory"
+SpeakerId = "StudyScribe"
+IsNpcCharacter = true
+
+[node name="ManuscriptDesk" parent="Interactables" instance=ExtResource("9_prop")]
+position = Vector2(720, 505)
+PromptName = "Manuscript Desk"
+NarrRailStoryPath = "res://Stories/DevPrototype/study_manuscript.nrstory"
+SpeakerId = "ManuscriptDesk"
+
+[node name="Bookshelf" parent="Interactables" instance=ExtResource("9_prop")]
+position = Vector2(780, 260)
+PromptName = "Bookshelf"
+ExamineText = "书架上塞满未装订的折页。有人用炭笔在侧板写了「勿借出」。"
+
+[node name="InkPot" parent="Interactables" instance=ExtResource("9_prop")]
+position = Vector2(360, 520)
+PromptName = "Ink Pot"
+ExamineText = "陶砚里的墨已结了一层薄壳。旁边还有半截鹅毛笔。"
+
+[node name="ToVillage" parent="Interactables" instance=ExtResource("6_hotspot")]
+position = Vector2(150, 525)
+PromptName = "To Village"
+HotspotId = "study_to_village"
+TargetScenePath = "res://Scenes/DevPrototype/Locations/Village.tscn"
+TargetSpawnId = "from_study"
+
+[node name="ToChurch" parent="Interactables" instance=ExtResource("6_hotspot")]
+position = Vector2(1130, 525)
+PromptName = "To Church"
+HotspotId = "study_to_church"
+TargetScenePath = "res://Scenes/DevPrototype/Locations/Church.tscn"
+TargetSpawnId = "from_study"
+
+[node name="CameraZones" type="Node2D" parent="."]
+
+[node name="DeskHall" type="Area2D" parent="CameraZones"]
+position = Vector2(320, 360)
+collision_layer = 0
+collision_mask = 1
+monitorable = false
+script = ExtResource("5_zone")
+ZoneName = "DeskHall"
+IsInitialZone = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="CameraZones/DeskHall"]
+shape = SubResource("RectangleShape2D_zone")
+
+[node name="Camera2D" type="Camera2D" parent="CameraZones/DeskHall"]
+
+[node name="Stacks" type="Area2D" parent="CameraZones"]
+position = Vector2(960, 360)
+collision_layer = 0
+collision_mask = 1
+monitorable = false
+script = ExtResource("5_zone")
+ZoneName = "Stacks"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="CameraZones/Stacks"]
+shape = SubResource("RectangleShape2D_zone")
+
+[node name="Camera2D" type="Camera2D" parent="CameraZones/Stacks"]
+
+[node name="CameraDirector" type="Node" parent="."]
+script = ExtResource("4_director")
+
+[node name="FadeLayer" type="CanvasLayer" parent="CameraDirector"]
+layer = 100
+
+[node name="FadeRect" type="ColorRect" parent="CameraDirector/FadeLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)
+
+[node name="HudLayer" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="DebugLabel" type="Label" parent="HudLayer"]
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 1200.0
+offset_bottom = 100.0
+mouse_filter = 2
+text = "Study | Path Network + Person/Examine"
+
+[node name="PathNetwork" type="Node2D" parent="."]
+script = ExtResource("7_pathhost")
+
+[node name="MainPath" type="Path2D" parent="PathNetwork"]
+curve = SubResource("Curve2D_main")
+
+[node name="BranchPath" type="Path2D" parent="PathNetwork"]
+curve = SubResource("Curve2D_branch")
+
+[node name="PathGizmo" type="Node2D" parent="."]
+script = ExtResource("8_gizmo")
+NetworkHostPath = NodePath("../PathNetwork")
+
+[node name="DialoguePresenter" type="CanvasLayer" parent="."]
+layer = 35
+script = ExtResource("10_presenter")
+Defaults = ExtResource("11_defaults")
+
+[node name="Player" parent="." instance=ExtResource("3_player")]
+position = Vector2(640, 520)

@@ -1,0 +1,14 @@
+[remap]
+
+importer="narrrail.nrstory_importer"
+type="Resource"
+uid="uid://cmu34uyo2vyxq"
+path="res://.godot/imported/church_novice_hello.nrstory-9440af84663542e4a44ee5d4070efc47.res"
+
+[deps]
+
+source_file="res://Stories/DevPrototype/church_novice_hello.nrstory"
+dest_files=["res://.godot/imported/church_novice_hello.nrstory-9440af84663542e4a44ee5d4070efc47.res"]
+
+[params]
+

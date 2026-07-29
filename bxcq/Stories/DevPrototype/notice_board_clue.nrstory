@@ -1,0 +1,56 @@
+meta:
+  schemaVersion: 1
+  storyId: notice_board_clue
+  entryNodeId: N_Read
+
+variables:
+  - name: has_clue_manuscript
+    type: Bool
+    scope: Session
+    defaultValue: "false"
+
+nodes:
+  - nodeId: N_Read
+    nodeType: Dialogue
+    dialogue:
+      speakerId: NoticeBoard
+      textKey: 告示上写着：书房藏有一份旧手稿抄本的线索。
+
+  - nodeId: N_SetClue
+    nodeType: SetVariable
+    actions:
+      - actionType: Set
+        variable:
+          name: has_clue_manuscript
+          type: Bool
+          scope: Session
+        value: "true"
+
+  - nodeId: N_Done
+    nodeType: Dialogue
+    dialogue:
+      speakerId: NoticeBoard
+      textKey: （你记下了线索。或许该再问问村里的老人。）
+
+  - nodeId: N_End
+    nodeType: End
+
+edges:
+  - sourceNodeId: N_Read
+    targetNodeId: N_SetClue
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_SetClue
+    targetNodeId: N_Done
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_Done
+    targetNodeId: N_End
+    priority: 0
+    condition:
+      logic: All
+      terms: []

@@ -1,0 +1,30 @@
+[gd_scene format=3 uid="uid://c2yve4btag1j5"]
+
+[ext_resource type="Script" path="res://Scripts/Interaction/InteractableProp.cs" id="1_prop"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hit"]
+size = Vector2(72, 80)
+
+[node name="InteractableProp" type="Area2D"]
+collision_layer = 2
+collision_mask = 0
+monitoring = false
+monitorable = true
+input_pickable = true
+script = ExtResource("1_prop")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_hit")
+
+[node name="Visual" type="Polygon2D" parent="."]
+color = Color(0.55, 0.62, 0.78, 1)
+polygon = PackedVector2Array(-24, -36, 24, -36, 24, 36, -24, 36)
+
+[node name="Label" type="Label" parent="."]
+offset_left = -56.0
+offset_top = -72.0
+offset_right = 56.0
+offset_bottom = -44.0
+mouse_filter = 2
+horizontal_alignment = 1
+text = "NPC"

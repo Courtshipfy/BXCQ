@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="DialogueUiDefaults" format=3 uid="uid://cva8js8qhkqku"]
+
+[ext_resource type="Script" uid="uid://hrjo5hw2qvhr" path="res://Scripts/NarrRail/DialogueUiDefaults.cs" id="1_script"]
+
+[resource]
+script = ExtResource("1_script")
+CharsPerSecond = 28.0

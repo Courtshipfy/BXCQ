@@ -1,0 +1,14 @@
+[remap]
+
+importer="narrrail.nrstory_importer"
+type="Resource"
+uid="uid://by5kle5dlgofj"
+path="res://.godot/imported/study_scribe_hello.nrstory-02a7c3f270fdf346805d7f43c15ea785.res"
+
+[deps]
+
+source_file="res://Stories/DevPrototype/study_scribe_hello.nrstory"
+dest_files=["res://.godot/imported/study_scribe_hello.nrstory-02a7c3f270fdf346805d7f43c15ea785.res"]
+
+[params]
+

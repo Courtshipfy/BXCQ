@@ -1,0 +1,56 @@
+meta:
+  schemaVersion: 1
+  storyId: study_manuscript
+  entryNodeId: N_Find
+
+variables:
+  - name: found_manuscript
+    type: Bool
+    scope: Session
+    defaultValue: "false"
+
+nodes:
+  - nodeId: N_Find
+    nodeType: Dialogue
+    dialogue:
+      speakerId: ManuscriptDesk
+      textKey: 案头摊着一份旧手稿抄本。墨迹发黄，页缘被人反复翻过。
+
+  - nodeId: N_SetFound
+    nodeType: SetVariable
+    actions:
+      - actionType: Set
+        variable:
+          name: found_manuscript
+          type: Bool
+          scope: Session
+        value: "true"
+
+  - nodeId: N_Done
+    nodeType: Dialogue
+    dialogue:
+      speakerId: ManuscriptDesk
+      textKey: （你收起了关键几页。该把这件事告诉村里的老人。）
+
+  - nodeId: N_End
+    nodeType: End
+
+edges:
+  - sourceNodeId: N_Find
+    targetNodeId: N_SetFound
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_SetFound
+    targetNodeId: N_Done
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_Done
+    targetNodeId: N_End
+    priority: 0
+    condition:
+      logic: All
+      terms: []

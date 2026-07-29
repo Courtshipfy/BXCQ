@@ -1,0 +1,240 @@
+[gd_scene format=3 uid="uid://cfbgqix8g5ilg"]
+
+[ext_resource type="Script" uid="uid://dfjty1d3qnp7v" path="res://Scripts/World/LocationScene.cs" id="1_loc"]
+[ext_resource type="Script" uid="uid://bdpd47oa2gqvd" path="res://Scripts/Input/MovementInputReader.cs" id="2_input"]
+[ext_resource type="PackedScene" uid="uid://4gv21jqlr06e" path="res://Scenes/Gameplay/Player.tscn" id="3_player"]
+[ext_resource type="Script" uid="uid://dgd4g2lgobdwt" path="res://Scripts/Camera/CameraDirector.cs" id="4_director"]
+[ext_resource type="Script" uid="uid://c3y8xdf6crlfv" path="res://Scripts/Camera/CameraZone.cs" id="5_zone"]
+[ext_resource type="PackedScene" uid="uid://c2yve4btag1j5" path="res://Scenes/Gameplay/InteractableProp.tscn" id="6_prop"]
+[ext_resource type="PackedScene" uid="uid://dp6varl0hqka7" path="res://Scenes/Gameplay/SceneHotspot.tscn" id="7_hotspot"]
+[ext_resource type="Script" uid="uid://cvmgph863lqk6" path="res://Scripts/Path/PathNetworkHost.cs" id="8_pathhost"]
+[ext_resource type="Script" uid="uid://dhguksifpwm2d" path="res://Scripts/Debug/PathNetworkGizmoDrawer.cs" id="9_gizmo"]
+[ext_resource type="Script" uid="uid://diwegy6f1qum8" path="res://Scripts/NarrRail/DialoguePresenter.cs" id="10_narrrail"]
+[ext_resource type="Resource" path="res://Resources/Ui/DialogueUiDefaults.tres" id="11_defaults"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_h"]
+size = Vector2(2400, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wall_v"]
+size = Vector2(40, 720)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_zone"]
+size = Vector2(800, 720)
+
+[sub_resource type="Curve2D" id="Curve2D_main"]
+_data = {
+"points": PackedVector2Array(0, 0, 40, -5, 120, 540, -30, -10, 40, -15, 400, 520, -50, -20, 50, -10, 750, 460, -40, 10, 40, 15, 1200, 500, -40, 10, 50, 5, 1600, 520, -40, -10, 40, -5, 1900, 480, -30, 5, 0, 0, 2280, 510)
+}
+point_count = 7
+
+[sub_resource type="Curve2D" id="Curve2D_branch"]
+_data = {
+"points": PackedVector2Array(0, 0, 20, -25, 1200, 500, -15, -20, 25, -20, 1340, 360, -20, -10, 0, 0, 1500, 260)
+}
+point_count = 3
+
+[node name="Village" type="Node2D" unique_id=461613295]
+script = ExtResource("1_loc")
+
+[node name="MovementInputReader" type="Node2D" parent="." unique_id=2071387898]
+script = ExtResource("2_input")
+
+[node name="Backdrop" type="Node2D" parent="." unique_id=1034030120]
+
+[node name="WestBg" type="ColorRect" parent="Backdrop" unique_id=2046641905]
+offset_right = 800.0
+offset_bottom = 720.0
+mouse_filter = 2
+color = Color(0.16, 0.14, 0.1, 1)
+
+[node name="CenterBg" type="ColorRect" parent="Backdrop" unique_id=183809705]
+offset_left = 800.0
+offset_right = 1600.0
+offset_bottom = 720.0
+mouse_filter = 2
+color = Color(0.11, 0.09, 0.08, 1)
+
+[node name="EastBg" type="ColorRect" parent="Backdrop" unique_id=1534444167]
+offset_left = 1600.0
+offset_right = 2400.0
+offset_bottom = 720.0
+mouse_filter = 2
+color = Color(0.1, 0.12, 0.16, 1)
+
+[node name="Ground" type="ColorRect" parent="Backdrop" unique_id=1311240470]
+offset_top = 480.0
+offset_right = 2400.0
+offset_bottom = 720.0
+mouse_filter = 2
+color = Color(0.29, 0.22, 0.16, 1)
+
+[node name="Title" type="Label" parent="Backdrop" unique_id=2077275165]
+offset_left = 1000.0
+offset_top = 120.0
+offset_right = 1400.0
+offset_bottom = 160.0
+text = "VILLAGE"
+
+[node name="Walls" type="Node2D" parent="." unique_id=1578609768]
+
+[node name="Top" type="StaticBody2D" parent="Walls" unique_id=760183064]
+position = Vector2(1200, -20)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/Top" unique_id=592113092]
+shape = SubResource("RectangleShape2D_wall_h")
+
+[node name="Bottom" type="StaticBody2D" parent="Walls" unique_id=108637364]
+position = Vector2(1200, 740)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/Bottom" unique_id=1995586199]
+shape = SubResource("RectangleShape2D_wall_h")
+
+[node name="Left" type="StaticBody2D" parent="Walls" unique_id=681660175]
+position = Vector2(-20, 360)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/Left" unique_id=1679201466]
+shape = SubResource("RectangleShape2D_wall_v")
+
+[node name="Right" type="StaticBody2D" parent="Walls" unique_id=1537978980]
+position = Vector2(2420, 360)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Walls/Right" unique_id=1428535886]
+shape = SubResource("RectangleShape2D_wall_v")
+
+[node name="Spawns" type="Node2D" parent="." unique_id=1007287544]
+
+[node name="default" type="Marker2D" parent="Spawns" unique_id=387205238]
+position = Vector2(1200, 520)
+
+[node name="from_church" type="Marker2D" parent="Spawns" unique_id=187342805]
+position = Vector2(2100, 520)
+
+[node name="from_study" type="Marker2D" parent="Spawns" unique_id=972586464]
+position = Vector2(1500, 520)
+
+[node name="Interactables" type="Node2D" parent="." unique_id=865354377]
+
+[node name="VillageElder" parent="Interactables" unique_id=665312318 instance=ExtResource("6_prop")]
+position = Vector2(400, 520)
+PromptName = "Village Elder"
+NarrRailStoryPath = "res://Stories/DevPrototype/village_elder_hello.nrstory"
+SpeakerId = "VillageElder"
+IsNpcCharacter = true
+
+[node name="Traveler" parent="Interactables" unique_id=1255842202 instance=ExtResource("6_prop")]
+position = Vector2(1100, 520)
+PromptName = "Traveler"
+NarrRailStoryPath = "res://Stories/DevPrototype/village_traveler_hello.nrstory"
+SpeakerId = "Traveler"
+IsNpcCharacter = true
+
+[node name="NoticeBoard" parent="Interactables" unique_id=1547697372 instance=ExtResource("6_prop")]
+position = Vector2(1450, 520)
+PromptName = "Notice Board"
+NarrRailStoryPath = "res://Stories/DevPrototype/notice_board_clue.nrstory"
+SpeakerId = "NoticeBoard"
+
+[node name="VillageWell" parent="Interactables" unique_id=500307211 instance=ExtResource("6_prop")]
+position = Vector2(900, 520)
+PromptName = "Village Well"
+ExamineText = "一口旧井。井沿被磨得很光滑，水面映着天光——没什么特别的，只是村子日常的一部分。"
+
+[node name="ToChurch" parent="Interactables" unique_id=1309138385 instance=ExtResource("7_hotspot")]
+position = Vector2(2200, 520)
+PromptName = "To Church"
+HotspotId = "to_church"
+TargetScenePath = "res://Scenes/DevPrototype/Locations/Church.tscn"
+TargetSpawnId = "from_village"
+IsEnabled = false
+
+[node name="ToStudy" parent="Interactables" unique_id=741294473 instance=ExtResource("7_hotspot")]
+position = Vector2(1600, 520)
+PromptName = "To Study"
+HotspotId = "to_study"
+TargetScenePath = "res://Scenes/DevPrototype/Locations/Study.tscn"
+TargetSpawnId = "from_village"
+RequiredStoryBool = "has_clue_manuscript"
+
+[node name="CameraZones" type="Node2D" parent="." unique_id=372549637]
+
+[node name="West" type="Area2D" parent="CameraZones" unique_id=278366071]
+position = Vector2(400, 360)
+collision_layer = 0
+monitorable = false
+script = ExtResource("5_zone")
+ZoneName = "West"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="CameraZones/West" unique_id=391932143]
+shape = SubResource("RectangleShape2D_zone")
+
+[node name="Camera2D" type="Camera2D" parent="CameraZones/West" unique_id=214708540]
+
+[node name="Center" type="Area2D" parent="CameraZones" unique_id=1629424791]
+position = Vector2(1200, 360)
+collision_layer = 0
+monitorable = false
+script = ExtResource("5_zone")
+ZoneName = "Center"
+IsInitialZone = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="CameraZones/Center" unique_id=1964421022]
+shape = SubResource("RectangleShape2D_zone")
+
+[node name="Camera2D" type="Camera2D" parent="CameraZones/Center" unique_id=1542066502]
+
+[node name="East" type="Area2D" parent="CameraZones" unique_id=1722742909]
+position = Vector2(2000, 360)
+collision_layer = 0
+monitorable = false
+script = ExtResource("5_zone")
+ZoneName = "East"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="CameraZones/East" unique_id=1173361523]
+shape = SubResource("RectangleShape2D_zone")
+
+[node name="Camera2D" type="Camera2D" parent="CameraZones/East" unique_id=145552881]
+
+[node name="CameraDirector" type="Node" parent="." unique_id=2020947124]
+script = ExtResource("4_director")
+
+[node name="FadeLayer" type="CanvasLayer" parent="CameraDirector" unique_id=352465813]
+layer = 100
+
+[node name="FadeRect" type="ColorRect" parent="CameraDirector/FadeLayer" unique_id=1227504577]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)
+
+[node name="HudLayer" type="CanvasLayer" parent="." unique_id=1635341112]
+layer = 10
+
+[node name="DebugLabel" type="Label" parent="HudLayer" unique_id=1150231316]
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 1200.0
+offset_bottom = 100.0
+text = "PATH PROTO | Village"
+
+[node name="PathNetwork" type="Node2D" parent="." unique_id=238174195]
+script = ExtResource("8_pathhost")
+
+[node name="MainPath" type="Path2D" parent="PathNetwork" unique_id=787772754]
+curve = SubResource("Curve2D_main")
+
+[node name="BranchPath" type="Path2D" parent="PathNetwork" unique_id=320743833]
+curve = SubResource("Curve2D_branch")
+
+[node name="PathGizmo" type="Node2D" parent="." unique_id=121750314]
+script = ExtResource("9_gizmo")
+
+[node name="DialoguePresenter" type="CanvasLayer" parent="." unique_id=1100885896]
+layer = 35
+script = ExtResource("10_narrrail")
+Defaults = ExtResource("11_defaults")
+
+[node name="Player" parent="." unique_id=450666641 instance=ExtResource("3_player")]
+position = Vector2(1200, 520)

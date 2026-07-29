@@ -1,0 +1,127 @@
+meta:
+  schemaVersion: 1
+  storyId: church_novice_hello
+  entryNodeId: N_Gate
+
+variables:
+  - name: found_manuscript
+    type: Bool
+    scope: Session
+    defaultValue: "false"
+  - name: has_church_relic_clue
+    type: Bool
+    scope: Session
+    defaultValue: "false"
+
+nodes:
+  - nodeId: N_Gate
+    nodeType: Condition
+    condition:
+      branches:
+        - label: has_relic
+          logic: All
+          terms:
+            - variable:
+                name: has_church_relic_clue
+                type: Bool
+                scope: Session
+              operator: "=="
+              compareValue: "true"
+        - label: found_ms
+          logic: All
+          terms:
+            - variable:
+                name: found_manuscript
+                type: Bool
+                scope: Session
+              operator: "=="
+              compareValue: "true"
+
+  - nodeId: N_RelicThanks
+    nodeType: Dialogue
+    dialogue:
+      speakerId: ChurchNovice
+      textKey: 你看见圣龛旁的记号了？……好。至少有人肯认真看。
+
+  - nodeId: N_RelicHint
+    nodeType: Dialogue
+    dialogue:
+      speakerId: ChurchNovice
+      textKey: 回去告诉村里的老人也无妨。真相从不怕多走几步。
+
+  - nodeId: N_MsGreeting
+    nodeType: Dialogue
+    dialogue:
+      speakerId: ChurchNovice
+      textKey: 你带着书房的气味进来……手稿抄本的事，我也听说了。
+
+  - nodeId: N_MsHint
+    nodeType: Dialogue
+    dialogue:
+      speakerId: ChurchNovice
+      textKey: 北侧圣龛不妨看一眼。有些字不写在纸上。
+
+  - nodeId: N_Greeting
+    nodeType: Dialogue
+    dialogue:
+      speakerId: ChurchNovice
+      textKey: 愿安宁与你同在。教堂虽小，门却常开。
+
+  - nodeId: N_Ask
+    nodeType: Dialogue
+    dialogue:
+      speakerId: ChurchNovice
+      textKey: 若只是路过，右侧可回村庄；左侧通往书房旧廊。
+
+  - nodeId: N_End
+    nodeType: End
+
+edges:
+  - sourceNodeId: N_Gate
+    targetNodeId: N_RelicThanks
+    priority: 0
+    sourceHandle: condition-0
+  - sourceNodeId: N_Gate
+    targetNodeId: N_MsGreeting
+    priority: 0
+    sourceHandle: condition-1
+  - sourceNodeId: N_Gate
+    targetNodeId: N_Greeting
+    priority: 0
+    sourceHandle: condition-fallback
+  - sourceNodeId: N_RelicThanks
+    targetNodeId: N_RelicHint
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_RelicHint
+    targetNodeId: N_End
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_MsGreeting
+    targetNodeId: N_MsHint
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_MsHint
+    targetNodeId: N_End
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_Greeting
+    targetNodeId: N_Ask
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_Ask
+    targetNodeId: N_End
+    priority: 0
+    condition:
+      logic: All
+      terms: []

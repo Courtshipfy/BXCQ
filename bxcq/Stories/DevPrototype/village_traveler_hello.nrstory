@@ -1,0 +1,36 @@
+meta:
+  schemaVersion: 1
+  storyId: village_traveler_hello
+  entryNodeId: N_Hi
+
+variables: []
+
+nodes:
+  - nodeId: N_Hi
+    nodeType: Dialogue
+    dialogue:
+      speakerId: Traveler
+      textKey: 赶路赶路……这村子倒是安静。
+
+  - nodeId: N_Bye
+    nodeType: Dialogue
+    dialogue:
+      speakerId: Traveler
+      textKey: 东边那口井边歇脚的人不少。我先走了。
+
+  - nodeId: N_End
+    nodeType: End
+
+edges:
+  - sourceNodeId: N_Hi
+    targetNodeId: N_Bye
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_Bye
+    targetNodeId: N_End
+    priority: 0
+    condition:
+      logic: All
+      terms: []

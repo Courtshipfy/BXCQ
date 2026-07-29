@@ -1,0 +1,14 @@
+[remap]
+
+importer="narrrail.nrstory_importer"
+type="Resource"
+uid="uid://by1x0i2mng6fo"
+path="res://.godot/imported/notice_board_clue.nrstory-f52a10a420bc17c21c276910bbc06c0b.res"
+
+[deps]
+
+source_file="res://Stories/DevPrototype/notice_board_clue.nrstory"
+dest_files=["res://.godot/imported/notice_board_clue.nrstory-f52a10a420bc17c21c276910bbc06c0b.res"]
+
+[params]
+

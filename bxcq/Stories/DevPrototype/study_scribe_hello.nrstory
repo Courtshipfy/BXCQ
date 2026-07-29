@@ -1,0 +1,86 @@
+meta:
+  schemaVersion: 1
+  storyId: study_scribe_hello
+  entryNodeId: N_Gate
+
+variables:
+  - name: found_manuscript
+    type: Bool
+    scope: Session
+    defaultValue: "false"
+
+nodes:
+  - nodeId: N_Gate
+    nodeType: Condition
+    condition:
+      branches:
+        - label: found_ms
+          logic: All
+          terms:
+            - variable:
+                name: found_manuscript
+                type: Bool
+                scope: Session
+              operator: "=="
+              compareValue: "true"
+
+  - nodeId: N_Found
+    nodeType: Dialogue
+    dialogue:
+      speakerId: StudyScribe
+      textKey: 案头那几页……是你拿走的？也好，别让蛀虫先读完。
+
+  - nodeId: N_FoundHint
+    nodeType: Dialogue
+    dialogue:
+      speakerId: StudyScribe
+      textKey: 若还想追根，去教堂问问见习修士。他们记得更旧的事。
+
+  - nodeId: N_Greeting
+    nodeType: Dialogue
+    dialogue:
+      speakerId: StudyScribe
+      textKey: 嘘——墨还没干。书房里说话请轻些。
+
+  - nodeId: N_Hint
+    nodeType: Dialogue
+    dialogue:
+      speakerId: StudyScribe
+      textKey: 东案那份抄本，告示上提过的，就在那儿。书架也可随便翻。
+
+  - nodeId: N_End
+    nodeType: End
+
+edges:
+  - sourceNodeId: N_Gate
+    targetNodeId: N_Found
+    priority: 0
+    sourceHandle: condition-0
+  - sourceNodeId: N_Gate
+    targetNodeId: N_Greeting
+    priority: 0
+    sourceHandle: condition-fallback
+  - sourceNodeId: N_Found
+    targetNodeId: N_FoundHint
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_FoundHint
+    targetNodeId: N_End
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_Greeting
+    targetNodeId: N_Hint
+    priority: 0
+    condition:
+      logic: All
+      terms: []
+  - sourceNodeId: N_Hint
+    targetNodeId: N_End
+    priority: 0
+    condition:
+      logic: All
+      terms: []
