@@ -1,6 +1,8 @@
 extends SceneTree
 ## End-to-end smoke for the retained interaction acceptance loop.
 
+const NarrRailSmokeDriver = preload("res://Tests/Smoke/narrrail_smoke_driver.gd")
+
 var _frames := 0
 var _phase := 0
 var _advances := 0
@@ -20,6 +22,7 @@ func _process(_delta: float) -> bool:
 		return false
 
 	var presenter := root.get_tree().get_first_node_in_group("dialogue_presenter")
+	var execution := root.get_node("/root/NarrRailExecution")
 	var bridge := root.get_node("/root/NarrRailBridge")
 	var player := root.get_tree().get_first_node_in_group("player")
 
@@ -41,38 +44,38 @@ func _process(_delta: float) -> bool:
 			_phase = 2
 			_advances = 0
 			_frames = 40
-			if not presenter.call("StartStory", "res://Stories/DevPrototype/notice_board_clue.nrstory"):
+			if not execution.call("StartStory", "res://Stories/DevPrototype/notice_board_clue.nrstory"):
 				push_error("acceptance smoke: notice story failed")
 				quit(1)
 				return false
 			print("acceptance smoke: B investigate started")
 		2:
-			if _frames % 8 == 0 and _advances < 24 and bool(presenter.get("IsRunning")):
-				presenter.call("SmokeAdvance")
+			if _frames % 8 == 0 and _advances < 24 and bool(execution.get("IsRunning")):
+				NarrRailSmokeDriver.advance(execution)
 				_advances += 1
-			if bool(bridge.call("GetBool", "has_clue_manuscript", false)) and not bool(presenter.get("IsRunning")):
+			if bool(bridge.call("GetBool", "has_clue_manuscript", false)) and not bool(execution.get("IsRunning")):
 				_phase = 3
 				_advances = 0
 				_frames = 40
 				print("acceptance smoke: C clue var OK")
-				if not presenter.call("StartSampleStory"):
+				if not execution.call("StartStory", "res://Stories/DevPrototype/village_elder_hello.nrstory"):
 					push_error("acceptance smoke: elder story failed")
 					quit(1)
 					return false
 		3:
-			if _frames % 8 == 0 and _advances < 16 and bool(presenter.get("IsRunning")):
-				presenter.call("SmokeAdvance")
+			if _frames % 8 == 0 and _advances < 16 and bool(execution.get("IsRunning")):
+				NarrRailSmokeDriver.advance(execution)
 				_advances += 1
-			var line := String(presenter.get("LastLineText"))
+			var line := String(execution.get("LastLineText"))
 			if line.contains("告示") or line.contains("手稿"):
 				_phase = 4
 				_frames = 40
 				# Finish remaining lines quickly
 				print("acceptance smoke: D elder clue branch OK")
 		4:
-			if bool(presenter.get("IsRunning")):
+			if bool(execution.get("IsRunning")):
 				if _frames % 6 == 0:
-					presenter.call("SmokeAdvance")
+					NarrRailSmokeDriver.advance(execution)
 				if _frames > 200:
 					push_error("acceptance smoke: elder never ended")
 					quit(1)
@@ -82,7 +85,7 @@ func _process(_delta: float) -> bool:
 				push_error("acceptance smoke: study/player missing")
 				quit(1)
 				return false
-			if not bool(study.call("CanInteract", player)):
+			if not bool(study.get("IsAvailable")):
 				push_error("acceptance smoke: To Study should allow interact with clue")
 				quit(1)
 				return false

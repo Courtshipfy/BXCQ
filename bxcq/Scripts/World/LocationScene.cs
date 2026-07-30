@@ -1,6 +1,5 @@
 using Godot;
 using BXCQ.CameraSystem;
-using BXCQ.GameInput;
 using BXCQ.Player;
 
 namespace BXCQ.World;
@@ -9,7 +8,6 @@ public partial class LocationScene : Node2D
 {
 	[Export] public string LocationDisplayName { get; set; } = "Location";
 
-	private MovementInputReader _inputReader = null!;
 	private PlayerController _player = null!;
 	private CameraDirector _cameraDirector = null!;
 	private Label _debugLabel = null!;
@@ -17,7 +15,6 @@ public partial class LocationScene : Node2D
 
 	public override void _Ready()
 	{
-		_inputReader = GetNode<MovementInputReader>("MovementInputReader");
 		_player = GetNode<PlayerController>("Player");
 		_cameraDirector = GetNode<CameraDirector>("CameraDirector");
 		_debugLabel = GetNode<Label>("HudLayer/DebugLabel");
@@ -35,7 +32,7 @@ public partial class LocationScene : Node2D
 		_gameState.CurrentZoneName = _cameraDirector.CurrentZoneName;
 		_debugLabel.Text =
 			$"《笔削春秋》玩法验证 | {LocationDisplayName} | Zone:{_gameState.CurrentZoneName} | " +
-			$"Last:{_player.LastInteractionName} | {_inputReader.CurrentIntent.Describe()}\n" +
+			$"Last:{_player.LastInteractionName} | {_player.MovementIntentDescription}\n" +
 			"三场景 | Person · Examine · Investigate · Hotspot | Path Network + Smart Interact";
 	}
 

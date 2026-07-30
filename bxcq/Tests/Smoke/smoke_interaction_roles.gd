@@ -19,6 +19,7 @@ func _process(_delta: float) -> bool:
 		return false
 
 	var presenter := root.get_tree().get_first_node_in_group("dialogue_presenter")
+	var execution := root.get_node("/root/NarrRailExecution")
 	match _phase:
 		0:
 			_phase = 1
@@ -71,7 +72,7 @@ func _process(_delta: float) -> bool:
 				push_error("roles smoke: examine body empty")
 				quit(1)
 				return false
-			if bool(presenter.call("StartSampleStory")):
+			if bool(execution.call("StartStory", "res://Stories/DevPrototype/village_elder_hello.nrstory")):
 				push_error("roles smoke: dialogue must refuse during examine")
 				quit(1)
 				return false
@@ -80,14 +81,14 @@ func _process(_delta: float) -> bool:
 			_frames = 40
 		2:
 			# Person channel
-			if not presenter.call("StartStory", "res://Stories/DevPrototype/village_traveler_hello.nrstory"):
+			if not execution.call("StartStory", "res://Stories/DevPrototype/village_traveler_hello.nrstory"):
 				push_error("roles smoke: traveler story failed")
 				quit(1)
 				return false
 			_phase = 3
 			_frames = 40
 		3:
-			if bool(presenter.get("IsRunning")) and String(presenter.get("LastLineText")).contains("赶路"):
+			if bool(execution.get("IsRunning")) and String(execution.get("LastLineText")).contains("赶路"):
 				# Examine must refuse during dialogue
 				var well2: Node = null
 				for node in root.get_tree().get_nodes_in_group("interactables"):

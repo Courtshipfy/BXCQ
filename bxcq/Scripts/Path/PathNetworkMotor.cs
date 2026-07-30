@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Godot;
+using BXCQ.GameInput;
 
 namespace BXCQ.PathSystem;
 
@@ -7,7 +8,7 @@ namespace BXCQ.PathSystem;
 /// Shared Path Network motor for click shortest-path + WASD tangent / Junction forks.
 /// Used by PlayerController; does not own a Node.
 /// </summary>
-public sealed class PathNetworkMotor
+internal sealed class PathNetworkMotor
 {
 	private readonly PathNetwork _network;
 	private readonly List<PathLeg> _legs = new();
@@ -21,9 +22,9 @@ public sealed class PathNetworkMotor
 	public float ArrivalThreshold { get; set; } = 6f;
 
 	public PathPose CurrentPose => _pose;
+	public MovementIntent CurrentIntent { get; private set; } = MovementIntent.None;
 	public bool IsMoving => _isMoving;
 	public bool HasClickRoute => _legIndex >= 0 && _legIndex < _legs.Count;
-	public PathNetwork Network => _network;
 	public int ClickRouteLegCount => HasClickRoute ? _legs.Count - _legIndex : 0;
 
 	public PathNetworkMotor(PathNetwork network)
@@ -46,6 +47,7 @@ public sealed class PathNetworkMotor
 	public void SetClickGoal(Vector2 worldPosition)
 	{
 		var goal = _network.FindClosestPose(worldPosition);
+		CurrentIntent = MovementIntent.FromClick(worldPosition);
 		_legs.Clear();
 		_legs.AddRange(_network.FindPath(_pose, goal));
 		_legIndex = _legs.Count > 0 ? 0 : -1;
@@ -55,6 +57,7 @@ public sealed class PathNetworkMotor
 			_pose = goal;
 			RememberContainingEdge();
 			_isMoving = false;
+			CurrentIntent = MovementIntent.None;
 		}
 	}
 
@@ -79,18 +82,21 @@ public sealed class PathNetworkMotor
 	{
 		_legs.Clear();
 		_legIndex = -1;
+		CurrentIntent = MovementIntent.None;
 	}
 
 	/// <summary>
 	/// Advance one physics tick. Returns whether pose changed.
 	/// Keyboard input non-zero cancels click route.
 	/// </summary>
-	public bool Tick(Vector2 keyboardInput, float dt)
+	public bool Tick(MovementIntent inputIntent, float dt)
 	{
-		if (keyboardInput.LengthSquared() > 0.01f)
+		if (inputIntent.Source == MovementInputSource.Keyboard && inputIntent.HasDirection)
 		{
-			ClearClickRoute();
-			return TickKeyboard(keyboardInput, dt);
+			_legs.Clear();
+			_legIndex = -1;
+			CurrentIntent = inputIntent;
+			return TickKeyboard(inputIntent.Direction, dt);
 		}
 
 		if (HasClickRoute)
@@ -98,6 +104,7 @@ public sealed class PathNetworkMotor
 			return TickClick(dt);
 		}
 
+		CurrentIntent = MovementIntent.None;
 		_isMoving = false;
 		return false;
 	}

@@ -9,16 +9,16 @@ namespace BXCQ.PathSystem;
 /// Sparse Path Network: weld Path2D endpoints/samples into junctions, then Dijkstra on edges.
 /// Built once (Ready); click pathfinding inserts temporary start/goal nodes.
 /// </summary>
-public sealed class PathNetwork
+internal sealed class PathNetwork
 {
 	private readonly List<Path2D> _paths;
 	private readonly List<NetworkNode> _nodes;
 	private readonly List<NetworkEdge> _edges;
 	private readonly Dictionary<int, List<int>> _adjacency; // nodeId -> edgeIds
 
-	public IReadOnlyList<Path2D> Paths => _paths;
-	public IReadOnlyList<NetworkNode> Nodes => _nodes;
-	public IReadOnlyList<NetworkEdge> Edges => _edges;
+	public int PathCount => _paths.Count;
+	public int NodeCount => _nodes.Count;
+	public int EdgeCount => _edges.Count;
 
 	public float WeldRadius { get; }
 	public float WeldSampleSpacing { get; }
@@ -235,10 +235,6 @@ public sealed class PathNetwork
 		var path = _paths[pose.PathId];
 		return path.ToGlobal(path.Curve.SampleBaked(pose.Offset));
 	}
-
-	/// <summary>Project a world point onto the nearest Path Pose and return its world position.</summary>
-	public Vector2 ProjectToNetwork(Vector2 worldPosition) => PoseToWorld(FindClosestPose(worldPosition));
-
 
 	public Vector2 GetWorldTangent(PathPose pose)
 	{
@@ -755,16 +751,53 @@ public sealed class PathNetwork
 			samples.Add((pathId, offset, world));
 		}
 	}
+
+	public PathNetworkDebugSnapshot CreateDebugSnapshot()
+	{
+		var debugPaths = new List<PathDebugPath>();
+		for (var pathId = 0; pathId < _paths.Count; pathId++)
+		{
+			var path = _paths[pathId];
+			var baked = path.Curve.GetBakedPoints();
+			var worldPoints = new Vector2[baked.Length];
+			for (var i = 0; i < baked.Length; i++)
+			{
+				worldPoints[i] = path.ToGlobal(baked[i]);
+			}
+
+			debugPaths.Add(new PathDebugPath(pathId, worldPoints));
+		}
+
+		return new PathNetworkDebugSnapshot(
+			debugPaths,
+			_nodes.Select(node => node.WorldPosition).ToArray());
+	}
 }
 
-public sealed class NetworkNode
+internal readonly record struct PathDebugPath(int PathId, Vector2[] WorldPoints);
+
+internal sealed class PathNetworkDebugSnapshot
+{
+	public IReadOnlyList<PathDebugPath> Paths { get; }
+	public IReadOnlyList<Vector2> Junctions { get; }
+
+	public PathNetworkDebugSnapshot(
+		IReadOnlyList<PathDebugPath> paths,
+		IReadOnlyList<Vector2> junctions)
+	{
+		Paths = paths;
+		Junctions = junctions;
+	}
+}
+
+internal sealed class NetworkNode
 {
 	public required int Id { get; init; }
 	public Vector2 WorldPosition { get; set; }
 	public List<int> EdgeIds { get; init; } = new();
 }
 
-public sealed class NetworkEdge
+internal sealed class NetworkEdge
 {
 	public required int Id { get; set; }
 	public required int PathId { get; init; }

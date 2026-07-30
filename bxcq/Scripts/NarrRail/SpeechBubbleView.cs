@@ -102,7 +102,7 @@ public partial class SpeechBubbleView : Control
 		_shadow = GetNode<NinePatchRect>("Shadow");
 		_body = GetNode<NinePatchRect>("Body");
 		_speakerPlate = GetNode<NinePatchRect>("SpeakerPlate");
-		_speakerLabel = GetNode<Label>("SpeakerLabel");
+		_speakerLabel = GetNode<Label>("SpeakerPlate/SpeakerLabel");
 		_leftScroll = GetNode<Control>("LeftScroll");
 		_leftScrollTop = GetNode<TextureRect>("LeftScroll/Top");
 		_leftScrollMiddle = GetNode<TextureRect>("LeftScroll/Middle");

@@ -1,25 +1,19 @@
 using Godot;
-using Godot.Collections;
-using System.Collections.Generic;
 
 namespace BXCQ.NarrRail;
 
-/// <summary>
-/// Dialogue + Examine Presenter — NarrRail bubbles and short object Examine mode.
-/// </summary>
+/// <summary>Renders NarrRail lines and choices plus one-shot Examine text.</summary>
 public partial class DialoguePresenter : CanvasLayer
 {
 	private const string BubbleScenePath = "res://Scenes/UI/AdaptiveSpeechBubble.tscn";
 
-	[Export] public string SampleStoryPath { get; set; } = "res://Stories/DevPrototype/village_elder_hello.nrstory";
 	[Export] public DialogueUiDefaults Defaults { get; set; }
 
-	private GodotObject _session = null!;
+	private NarrRailExecution _execution = null!;
 	private SpeechBubbleView _bubble = null!;
 	private GameState _gameState = null!;
 	private Node2D _player = null!;
 
-	private bool _running;
 	private bool _examining;
 	private bool _waitingChoice;
 	private string _fullLine = "";
@@ -29,7 +23,6 @@ public partial class DialoguePresenter : CanvasLayer
 	private bool _revealComplete = true;
 	private Vector2 _worldAnchor;
 
-	public bool IsRunning => _running;
 	public bool IsExamining => _examining;
 	public string LastLineText { get; private set; } = "";
 
@@ -38,6 +31,7 @@ public partial class DialoguePresenter : CanvasLayer
 		Layer = 35;
 		Defaults ??= GD.Load<DialogueUiDefaults>("res://Resources/Ui/DialogueUiDefaults.tres");
 		_gameState = GetNode<GameState>("/root/GameState");
+		_execution = GetNode<NarrRailExecution>("/root/NarrRailExecution");
 
 		var bubbleScene = GD.Load<PackedScene>(BubbleScenePath);
 		if (bubbleScene == null)
@@ -55,27 +49,26 @@ public partial class DialoguePresenter : CanvasLayer
 		}
 
 		_bubble.ChoiceSelected += OnChoicePicked;
-
-
-		var sessionScript = GD.Load<GDScript>("res://addons/narrrail/runtime/narrrail_session.gd");
-		if (sessionScript == null)
-		{
-			GD.PushError("DialoguePresenter: narrrail_session.gd missing");
-			return;
-		}
-
-		_session = (GodotObject)sessionScript.New();
-		_session.Connect("line_changed", Callable.From((Dictionary payload) => OnLineChanged(payload)));
-		_session.Connect("choices_changed", Callable.From((Array choices) => OnChoicesChanged(choices)));
-		_session.Connect("event_emitted", Callable.From((Dictionary payload) => OnEventEmitted(payload)));
-		_session.Connect("variable_changed", Callable.From((Dictionary payload) => OnVariableChanged(payload)));
-		_session.Connect("ended", Callable.From(OnEnded));
-		_session.Connect("error_raised", Callable.From((string message) => OnError(message)));
-
+		_execution.StoryStarted += OnStoryStarted;
+		_execution.LineChanged += OnLineChanged;
+		_execution.ChoicesChanged += OnChoicesChanged;
+		_execution.StoryEnded += OnStoryEnded;
+		_execution.StoryFailed += OnStoryFailed;
 		AddToGroup("dialogue_presenter");
-		AddToGroup("narrrail_player");
 		CallDeferred(nameof(CachePlayer));
 		GD.Print("DialoguePresenter ready");
+	}
+
+	public override void _ExitTree()
+	{
+		if (_execution != null)
+		{
+			_execution.StoryStarted -= OnStoryStarted;
+			_execution.LineChanged -= OnLineChanged;
+			_execution.ChoicesChanged -= OnChoicesChanged;
+			_execution.StoryEnded -= OnStoryEnded;
+			_execution.StoryFailed -= OnStoryFailed;
+		}
 	}
 
 	private void CachePlayer()
@@ -84,12 +77,10 @@ public partial class DialoguePresenter : CanvasLayer
 			?? GetNodeOrNull<Node2D>("../Player");
 	}
 
-	public bool StartSampleStory() => StartStory(SampleStoryPath);
-
 	/// <summary>Shows one-shot Examine text; click or Space dismisses it.</summary>
 	public bool ShowExamine(Vector2 worldAnchor, string title, string body)
 	{
-		if (_running || _examining || string.IsNullOrWhiteSpace(body))
+		if (_execution.IsRunning || _examining || string.IsNullOrWhiteSpace(body))
 		{
 			return false;
 		}
@@ -123,39 +114,6 @@ public partial class DialoguePresenter : CanvasLayer
 		GD.Print("Examine dismissed");
 	}
 
-	public bool StartStory(string storyPath)
-	{
-		if (_session == null || _running || _examining)
-		{
-			return false;
-		}
-
-		var loader = GD.Load<GDScript>("res://addons/narrrail/runtime/story_resource_loader.gd");
-		var resultVariant = loader.Call("load_story", storyPath);
-		if (resultVariant.VariantType != Variant.Type.Dictionary)
-		{
-			return false;
-		}
-
-		var result = resultVariant.AsGodotDictionary();
-		if (!(result.ContainsKey("ok") && (bool)result["ok"]))
-		{
-			var err = result.ContainsKey("error") ? result["error"].AsString() : "unknown";
-			GD.PushError($"NarrRail load failed: {err}");
-			return false;
-		}
-
-		_waitingChoice = false;
-		_bubble.ClearChoices();
-		var bridge = GetNodeOrNull<NarrRailBridge>("/root/NarrRailBridge");
-		var initialVars = bridge?.CreateInitialVariables() ?? new Dictionary();
-		_session.Call("start", result["story"].AsGodotDictionary(), initialVars);
-		_running = true;
-		_gameState.IsDialogueBlocking = true;
-		GD.Print($"DialoguePresenter started {storyPath}");
-		return true;
-	}
-
 	public override void _Process(double delta)
 	{
 		if (_examining)
@@ -164,28 +122,27 @@ public partial class DialoguePresenter : CanvasLayer
 			return;
 		}
 
-		if (!_running)
+		if (!_execution.IsRunning)
 		{
 			return;
 		}
 
 		UpdateBubblePlacement();
-
 		if (_revealComplete || _waitingChoice)
 		{
 			return;
 		}
 
-		var cps = Defaults?.CharsPerSecond > 0 ? Defaults.CharsPerSecond : 28f;
-		_typeAccumulator += (float)delta * cps;
-		var add = (int)_typeAccumulator;
-		if (add <= 0)
+		var charsPerSecond = Defaults?.CharsPerSecond > 0 ? Defaults.CharsPerSecond : 28f;
+		_typeAccumulator += (float)delta * charsPerSecond;
+		var addedChars = (int)_typeAccumulator;
+		if (addedChars <= 0)
 		{
 			return;
 		}
 
-		_typeAccumulator -= add;
-		var next = Mathf.Min(_fullLine.Length, _visibleChars + add);
+		_typeAccumulator -= addedChars;
+		var next = Mathf.Min(_fullLine.Length, _visibleChars + addedChars);
 		if (next != _visibleChars)
 		{
 			_visibleChars = next;
@@ -214,7 +171,7 @@ public partial class DialoguePresenter : CanvasLayer
 			return;
 		}
 
-		if (!_running || _waitingChoice)
+		if (!_execution.IsRunning || _waitingChoice || _execution.IsPaused)
 		{
 			return;
 		}
@@ -228,16 +185,23 @@ public partial class DialoguePresenter : CanvasLayer
 			return;
 		}
 
-		_session.Call("next");
+		_execution.Advance();
 		GetViewport().SetInputAsHandled();
 	}
 
-	private void OnLineChanged(Dictionary payload)
+	private void OnStoryStarted()
 	{
 		_waitingChoice = false;
-		_speakerId = payload.ContainsKey("speakerId") ? payload["speakerId"].AsString() : "";
-		_fullLine = payload.ContainsKey("textKey") ? payload["textKey"].AsString() : "";
-		LastLineText = _fullLine;
+		_revealComplete = true;
+		_bubble.ClearChoices();
+	}
+
+	private void OnLineChanged(string speakerId, string text)
+	{
+		_waitingChoice = false;
+		_speakerId = speakerId;
+		_fullLine = text;
+		LastLineText = text;
 		_visibleChars = 0;
 		_typeAccumulator = 0f;
 		_revealComplete = string.IsNullOrEmpty(_fullLine);
@@ -247,128 +211,38 @@ public partial class DialoguePresenter : CanvasLayer
 		GD.Print($"Dialogue line: [{_speakerId}] {_fullLine}");
 	}
 
-	private void OnChoicesChanged(Array choices)
+	private void OnChoicesChanged(string[] labels)
 	{
 		_waitingChoice = true;
 		_revealComplete = true;
-		var labels = new List<string>();
-		foreach (var item in choices)
-		{
-			if (item.VariantType != Variant.Type.Dictionary)
-			{
-				continue;
-			}
-
-			var dict = item.AsGodotDictionary();
-			var text = dict.ContainsKey("textKey") ? dict["textKey"].AsString() : "(choice)";
-			labels.Add(text);
-		}
-
-		_bubble.ShowChoices(labels.ToArray());
+		_bubble.ShowChoices(labels);
 		UpdateBubblePlacement();
-		GD.Print($"Dialogue choices: {labels.Count}");
+		GD.Print($"Dialogue choices: {labels.Length}");
 	}
 
 	private void OnChoicePicked(int index)
 	{
-		if (!_waitingChoice)
+		if (!_waitingChoice || !_execution.Choose(index))
 		{
 			return;
 		}
 
 		_waitingChoice = false;
 		_bubble.ClearChoices();
-		_session.Call("choose", index);
 	}
 
-	private void OnEventEmitted(Dictionary payload)
+	private void OnStoryEnded()
 	{
-		var presentation = GetNodeOrNull<PresentationDirector>("/root/PresentationDirector");
-		var bridge = GetNodeOrNull<NarrRailBridge>("/root/NarrRailBridge");
-
-		var handled = false;
-		if (presentation != null)
-		{
-			handled |= presentation.TryHandle(payload, _session);
-		}
-
-		if (bridge != null)
-		{
-			handled |= bridge.TryHandle(payload, _session);
-		}
-
-		if (!handled)
-		{
-			var type = payload.ContainsKey("eventType") ? payload["eventType"].AsString() : "";
-			GD.PushWarning($"DialoguePresenter: unhandled eventType '{type}'");
-		}
-	}
-
-	private void OnVariableChanged(Dictionary payload)
-	{
-		GetNodeOrNull<NarrRailBridge>("/root/NarrRailBridge")?.OnVariableChanged(payload);
-	}
-
-	private void OnEnded()
-	{
-		_running = false;
 		_waitingChoice = false;
-		_gameState.IsDialogueBlocking = false;
 		_revealComplete = true;
 		_bubble.HideBubble();
-		var bridge = GetNodeOrNull<NarrRailBridge>("/root/NarrRailBridge");
-		if (bridge != null && _session != null)
-		{
-			var snapshot = _session.Call("get_variable_snapshot").AsGodotDictionary();
-			bridge.MergeVariableSnapshot(snapshot);
-			bridge.ClearSession(_session);
-		}
-
-		GetNodeOrNull<PresentationDirector>("/root/PresentationDirector")?.ClearSession(_session);
-		GD.Print("DialoguePresenter: story ended");
 	}
 
-	private void OnError(string message)
+	private void OnStoryFailed(string message)
 	{
-		GD.PushError($"NarrRail error: {message}");
-		_running = false;
 		_waitingChoice = false;
-		_gameState.IsDialogueBlocking = false;
+		_revealComplete = true;
 		_bubble.HideBubble();
-		GetNodeOrNull<NarrRailBridge>("/root/NarrRailBridge")?.ClearSession(_session);
-		GetNodeOrNull<PresentationDirector>("/root/PresentationDirector")?.ClearSession(_session);
-	}
-
-	/// <summary>Headless/smoke helper: skip typing or advance / pick first choice.</summary>
-	public void SmokeAdvance()
-	{
-		if (!_running || _session == null)
-		{
-			return;
-		}
-
-		var state = _session.Call("get_state").AsGodotDictionary();
-		var sessionState = state.ContainsKey("state") ? state["state"].AsString() : "";
-		if (sessionState == "paused")
-		{
-			return;
-		}
-
-		if (!_revealComplete)
-		{
-			_visibleChars = _fullLine.Length;
-			_revealComplete = true;
-			_bubble.SetVisibleText(_fullLine);
-			return;
-		}
-
-		if (_waitingChoice)
-		{
-			OnChoicePicked(0);
-			return;
-		}
-
-		_session.Call("next");
 	}
 
 	private void UpdateBubblePlacement()
@@ -378,7 +252,7 @@ public partial class DialoguePresenter : CanvasLayer
 			return;
 		}
 
-		if (_running && !_examining)
+		if (_execution.IsRunning && !_examining)
 		{
 			_worldAnchor = SpeakerResolver.ResolveAnchor(GetTree(), _speakerId, _player);
 		}
@@ -387,5 +261,4 @@ public partial class DialoguePresenter : CanvasLayer
 		var screen = canvas * _worldAnchor;
 		_bubble.PlaceAtScreenAnchor(screen, GetViewport().GetVisibleRect().Size);
 	}
-
 }

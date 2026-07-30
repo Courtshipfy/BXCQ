@@ -2,6 +2,8 @@ extends SceneTree
 ## Full scene parity: Church + Study match Village mechanics
 ## (Path Network fork, camera zones, Person / Examine / Investigate).
 
+const NarrRailSmokeDriver = preload("res://Tests/Smoke/narrrail_smoke_driver.gd")
+
 var _frames := 0
 var _phase := 0
 var _advances := 0
@@ -21,6 +23,7 @@ func _process(_delta: float) -> bool:
 		return false
 
 	var bridge := root.get_node("/root/NarrRailBridge")
+	var execution := root.get_node("/root/NarrRailExecution")
 	var presenter := root.get_tree().get_first_node_in_group("dialogue_presenter")
 	var host := root.get_tree().current_scene.get_node_or_null("PathNetwork")
 
@@ -60,28 +63,28 @@ func _process(_delta: float) -> bool:
 			_advances = 0
 			_frames = 40
 			bridge.call("ClearStoryVariables")
-			if not presenter.call("StartStory", "res://Stories/DevPrototype/church_reliquary_clue.nrstory"):
+			if not execution.call("StartStory", "res://Stories/DevPrototype/church_reliquary_clue.nrstory"):
 				push_error("parity: reliquary story failed")
 				quit(1)
 				return false
 		1:
-			if _frames % 8 == 0 and _advances < 24 and bool(presenter.get("IsRunning")):
-				presenter.call("SmokeAdvance")
+			if _frames % 8 == 0 and _advances < 24 and bool(execution.get("IsRunning")):
+				NarrRailSmokeDriver.advance(execution)
 				_advances += 1
-			if bool(bridge.call("GetBool", "has_church_relic_clue", false)) and not bool(presenter.get("IsRunning")):
+			if bool(bridge.call("GetBool", "has_church_relic_clue", false)) and not bool(execution.get("IsRunning")):
 				print("parity: B relic clue OK")
 				_phase = 2
 				_advances = 0
 				_frames = 40
-				if not presenter.call("StartStory", "res://Stories/DevPrototype/church_novice_hello.nrstory"):
+				if not execution.call("StartStory", "res://Stories/DevPrototype/church_novice_hello.nrstory"):
 					push_error("parity: novice story failed")
 					quit(1)
 					return false
 		2:
-			if _frames % 8 == 0 and _advances < 20 and bool(presenter.get("IsRunning")):
-				presenter.call("SmokeAdvance")
+			if _frames % 8 == 0 and _advances < 20 and bool(execution.get("IsRunning")):
+				NarrRailSmokeDriver.advance(execution)
 				_advances += 1
-			var line := String(presenter.get("LastLineText"))
+			var line := String(execution.get("LastLineText"))
 			if line.contains("圣龛") or line.contains("记号") or line.contains("认真"):
 				print("parity: C novice relic branch OK")
 				_phase = 3
@@ -90,9 +93,9 @@ func _process(_delta: float) -> bool:
 				return false
 		3:
 			presenter = root.get_tree().get_first_node_in_group("dialogue_presenter")
-			if bool(presenter.get("IsRunning")):
+			if bool(execution.get("IsRunning")):
 				if _frames % 6 == 0:
-					presenter.call("SmokeAdvance")
+					NarrRailSmokeDriver.advance(execution)
 				if _frames > 200:
 					push_error("parity: novice never ended")
 					quit(1)

@@ -12,7 +12,7 @@ public partial class PathNetworkHost : Node2D
 	[Export] public float WeldRadius { get; set; } = 24f;
 	[Export] public float WeldSampleSpacing { get; set; } = 32f;
 
-	public PathNetwork Network { get; private set; } = null!;
+	private PathNetwork _network = null!;
 
 	public override void _Ready()
 	{
@@ -23,9 +23,27 @@ public partial class PathNetworkHost : Node2D
 	{
 		var paths = new List<Path2D>();
 		CollectPaths(this, paths);
-		Network = PathNetwork.Build(paths, WeldRadius, WeldSampleSpacing);
+		_network = PathNetwork.Build(paths, WeldRadius, WeldSampleSpacing);
 		GD.Print(
-			$"PathNetwork built: paths={Network.Paths.Count} nodes={Network.Nodes.Count} edges={Network.Edges.Count} weld={WeldRadius}");
+			$"PathNetwork built: paths={_network.PathCount} nodes={_network.NodeCount} edges={_network.EdgeCount} weld={WeldRadius}");
+	}
+
+	internal PathNetworkMotor CreateMotor()
+	{
+		if (_network == null)
+		{
+			Rebuild();
+		}
+		return new PathNetworkMotor(_network);
+	}
+
+	internal PathNetworkDebugSnapshot CreateDebugSnapshot()
+	{
+		if (_network == null)
+		{
+			Rebuild();
+		}
+		return _network.CreateDebugSnapshot();
 	}
 
 	private static void CollectPaths(Node root, List<Path2D> paths)

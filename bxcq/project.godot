@@ -21,6 +21,7 @@ GameState="*res://Scripts/Autoload/GameState.cs"
 SceneTransition="*res://Scripts/Autoload/SceneTransition.cs"
 NarrRailBridge="*res://Scripts/NarrRail/NarrRailBridge.cs"
 PresentationDirector="*res://Scripts/NarrRail/PresentationDirector.cs"
+NarrRailExecution="*res://Scripts/NarrRail/NarrRailExecution.cs"
 
 [display]
 

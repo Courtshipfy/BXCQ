@@ -34,6 +34,8 @@
 
 世界事件包括 `switch_camera_zone`、`change_scene`、`set_hotspot_enabled`；演出事件包括 `presentation.fade` 和 `delay`。
 
+**NarrRail Execution**：NarrRail Session 从故事加载到结束的完整运行过程，包括推进、选择、事件分派、剧情变量快照与 Dialogue Blocking；它不负责台词布局或屏幕演出。
+
 **Presentation Director**：负责淡入淡出和延迟等屏幕演出，不修改世界规则或剧情变量。
 
 ## World State

@@ -1,6 +1,8 @@
 extends SceneTree
 ## Smoke for story state: layered GameState + story var branch.
 
+const NarrRailSmokeDriver = preload("res://Tests/Smoke/narrrail_smoke_driver.gd")
+
 var _frames := 0
 var _phase := 0
 var _advances := 0
@@ -24,12 +26,12 @@ func _process(_delta: float) -> bool:
 	match _phase:
 		0:
 			_phase = 1
-			var presenter := root.get_tree().get_first_node_in_group("dialogue_presenter")
-			if presenter == null:
-				push_error("story-state smoke: DialoguePresenter missing")
+			var execution := root.get_node_or_null("/root/NarrRailExecution")
+			if execution == null:
+				push_error("story-state smoke: NarrRailExecution missing")
 				quit(1)
 				return false
-			if not presenter.call("StartStory", "res://Stories/DevPrototype/notice_board_clue.nrstory"):
+			if not execution.call("StartStory", "res://Stories/DevPrototype/notice_board_clue.nrstory"):
 				push_error("story-state smoke: notice board story failed")
 				quit(1)
 				return false
@@ -39,23 +41,22 @@ func _process(_delta: float) -> bool:
 			var bridge := root.get_node_or_null("/root/NarrRailBridge")
 			if bridge != null and bool(bridge.call("GetBool", "has_clue_manuscript", false)):
 				_clue_set = true
-			var presenter := root.get_tree().get_first_node_in_group("dialogue_presenter")
-			if _clue_set and presenter != null and not bool(presenter.get("IsRunning")):
+			var execution := root.get_node("/root/NarrRailExecution")
+			if _clue_set and not bool(execution.get("IsRunning")):
 				_phase = 2
 				_advances = 0
 				_frames = 40
 				print("story-state smoke: clue cached, starting elder")
-				if not presenter.call("StartSampleStory"):
+				if not execution.call("StartStory", "res://Stories/DevPrototype/village_elder_hello.nrstory"):
 					push_error("story-state smoke: elder story failed")
 					quit(1)
 					return false
 		2:
 			_advance_if_running()
-			var presenter := root.get_tree().get_first_node_in_group("dialogue_presenter")
-			if presenter != null:
-				var line := String(presenter.get("LastLineText"))
-				if line.contains("告示") or line.contains("手稿"):
-					_saw_clue_line = true
+			var execution := root.get_node("/root/NarrRailExecution")
+			var line := String(execution.get("LastLineText"))
+			if line.contains("告示") or line.contains("手稿"):
+				_saw_clue_line = true
 			if _frames > 280:
 				var gs := root.get_node("/root/GameState")
 				var scene_path := String(gs.get("CurrentScenePath"))
@@ -84,15 +85,11 @@ func _process(_delta: float) -> bool:
 func _advance_if_running() -> void:
 	if _frames % 10 != 0 or _advances > 40:
 		return
-	var presenter := root.get_tree().get_first_node_in_group("dialogue_presenter")
-	if presenter != null and bool(presenter.get("IsRunning")):
-		presenter.call("SmokeAdvance")
+	var execution := root.get_node("/root/NarrRailExecution")
+	if bool(execution.get("IsRunning")):
+		NarrRailSmokeDriver.advance(execution)
 		_advances += 1
 
-# Godot print scrape: DialoguePresenter prints lines; watch for clue greeting in stdout via shell.
-# Also set flag when debug label / we poll nothing — use a marker on bridge after first elder line.
-# Fallback: PresentationDirector unused. Parse is done in shell; here we check IsRunning end.
-# Detect clue line by asking presenter is impractical; rely on stdout in shell AND
-# that Condition took clue path if GetBool was true before StartSampleStory.
+# NarrRailExecution exposes the latest Session line as an observable execution outcome.
 func _notification(what: int) -> void:
 	pass

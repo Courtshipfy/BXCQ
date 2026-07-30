@@ -1,6 +1,8 @@
 extends SceneTree
 ## Smoke for presentation: presentation.fade + existing bridge events.
 
+const NarrRailSmokeDriver = preload("res://Tests/Smoke/narrrail_smoke_driver.gd")
+
 var _frames := 0
 var _phase := 0
 var _advances := 0
@@ -25,17 +27,17 @@ func _process(_delta: float) -> bool:
 	match _phase:
 		0:
 			_phase = 1
-			var presenter := root.get_tree().get_first_node_in_group("dialogue_presenter")
-			if presenter == null:
-				push_error("presentation smoke: DialoguePresenter missing")
+			var execution := root.get_node_or_null("/root/NarrRailExecution")
+			if execution == null:
+				push_error("presentation smoke: NarrRailExecution missing")
 				quit(1)
 				return false
 			if root.get_node_or_null("/root/PresentationDirector") == null:
 				push_error("presentation smoke: PresentationDirector missing")
 				quit(1)
 				return false
-			if not presenter.call("StartSampleStory"):
-				push_error("presentation smoke: StartSampleStory failed")
+			if not execution.call("StartStory", "res://Stories/DevPrototype/village_elder_hello.nrstory"):
+				push_error("presentation smoke: StartStory failed")
 				quit(1)
 				return false
 			print("presentation smoke: story started")
@@ -43,9 +45,9 @@ func _process(_delta: float) -> bool:
 			_poll_effects()
 			# Pace advances slowly enough for fade pause/resume (~0.45s)
 			if _frames % 12 == 0 and _advances < 36:
-				var presenter := root.get_tree().get_first_node_in_group("dialogue_presenter")
-				if presenter != null and presenter.get("IsRunning"):
-					presenter.call("SmokeAdvance")
+				var execution := root.get_node("/root/NarrRailExecution")
+				if execution.get("IsRunning"):
+					NarrRailSmokeDriver.advance(execution)
 					_advances += 1
 			if _frames > 420:
 				if not _saw_fade:

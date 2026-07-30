@@ -22,40 +22,27 @@ public partial class PathNetworkGizmoDrawer : Node2D
 
 	public override void _Draw()
 	{
-		var network = _host.Network;
-		if (network == null)
+		var snapshot = _host.CreateDebugSnapshot();
+		foreach (var path in snapshot.Paths)
 		{
-			return;
-		}
-
-		for (var i = 0; i < network.Paths.Count; i++)
-		{
-			var path = network.Paths[i];
-			var curve = path.Curve;
-			if (curve == null || curve.PointCount < 2)
+			if (path.WorldPoints.Length < 2)
 			{
 				continue;
 			}
 
-			var baked = curve.GetBakedPoints();
-			if (baked.Length < 2)
+			var points = new Vector2[path.WorldPoints.Length];
+			for (var i = 0; i < path.WorldPoints.Length; i++)
 			{
-				continue;
+				points[i] = path.WorldPoints[i] - GlobalPosition;
 			}
 
-			var points = new Vector2[baked.Length];
-			for (var p = 0; p < baked.Length; p++)
-			{
-				points[p] = path.ToGlobal(baked[p]) - GlobalPosition;
-			}
-
-			var color = i == 0 ? PathColor : BranchColor;
+			var color = path.PathId == 0 ? PathColor : BranchColor;
 			DrawPolyline(points, color, LineWidth, true);
 		}
 
-		foreach (var node in network.Nodes)
+		foreach (var junction in snapshot.Junctions)
 		{
-			DrawCircle(node.WorldPosition - GlobalPosition, 9f, JunctionColor);
+			DrawCircle(junction - GlobalPosition, 9f, JunctionColor);
 		}
 	}
 }

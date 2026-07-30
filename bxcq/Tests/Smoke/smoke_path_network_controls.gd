@@ -4,7 +4,7 @@ extends SceneTree
 var _frames := 0
 var _phase := 0
 var _player: Node
-var _presenter: Node
+var _execution: Node
 var _elder: Node
 var _junction_start := Vector2.ZERO
 var _click_target := Vector2(1750, 520)
@@ -29,9 +29,9 @@ func _process(_delta: float) -> bool:
 	match _phase:
 		0:
 			_player = root.get_tree().get_first_node_in_group("player")
-			_presenter = root.get_tree().get_first_node_in_group("dialogue_presenter")
+			_execution = root.get_node_or_null("/root/NarrRailExecution")
 			_elder = root.get_tree().current_scene.get_node("Interactables/VillageElder")
-			if _player == null or _presenter == null or _elder == null:
+			if _player == null or _execution == null or _elder == null:
 				_fail("required scene nodes missing")
 				return false
 			if not _player.get("UsesPathNetwork"):
@@ -53,9 +53,6 @@ func _process(_delta: float) -> bool:
 				return false
 			_phase = 2
 		2:
-			# Let MovementInputReader observe the key release before issuing a click command.
-			if _frames < 83:
-				return false
 			if not _player.has_method("RequestMoveTo"):
 				_fail("PlayerController lacks the click-command seam")
 				return false
@@ -82,7 +79,7 @@ func _process(_delta: float) -> bool:
 			elif Time.get_ticks_msec() - _click_started_ms > 5000:
 				_fail("click-command route did not complete")
 		4:
-			if _presenter.get("IsRunning"):
+			if _execution.get("IsRunning"):
 				print("path controls smoke: PASS")
 				quit(0)
 			elif Time.get_ticks_msec() - _smart_started_ms > 10000:

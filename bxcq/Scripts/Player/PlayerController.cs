@@ -22,10 +22,9 @@ public partial class PlayerController : CharacterBody2D
 	private AnimationPlayer _animationPlayer = null!;
 	private MovementInputReader _inputReader = null!;
 	private PathNetworkMotor _motor = null!;
+	private SmartInteractController _smartInteract = null!;
 	private GameState _gameState = null!;
 	private PlayerMoveState _previousMoveState = PlayerMoveState.Idle;
-	private IInteractable _pendingInteractable = null!;
-	private bool _hasPendingInteractable;
 
 	public Area2D InteractionArea => _interactionArea;
 	public PlayerMoveState MoveState { get; private set; } = PlayerMoveState.Idle;
@@ -34,6 +33,7 @@ public partial class PlayerController : CharacterBody2D
 	public bool UsesPathNetwork => _motor != null;
 	public bool HasClickRoute => _motor?.HasClickRoute ?? false;
 	public int CurrentPathId => _motor?.CurrentPose.PathId ?? -1;
+	public string MovementIntentDescription => _motor?.CurrentIntent.Describe() ?? MovementIntent.None.Describe();
 
 	public override void _Ready()
 	{
@@ -46,17 +46,16 @@ public partial class PlayerController : CharacterBody2D
 		AddToGroup("player");
 
 		var host = GetNodeOrNull<PathNetworkHost>(PathNetworkPath);
-		if (host?.Network == null)
+		if (host == null)
 		{
 			GD.PushError($"PlayerController: PathNetwork missing at '{PathNetworkPath}'. Path movement required.");
 			return;
 		}
 
-		_motor = new PathNetworkMotor(host.Network)
-		{
-			MoveSpeed = MoveSpeed,
-			ArrivalThreshold = ArrivalThreshold,
-		};
+		_motor = host.CreateMotor();
+		_motor.MoveSpeed = MoveSpeed;
+		_motor.ArrivalThreshold = ArrivalThreshold;
+		_smartInteract = new SmartInteractController(this, _interactionArea, _motor);
 		_motor.SnapToWorld(GlobalPosition);
 		ApplyMotorPose(updateFacing: true);
 		ApplyFacingToVisual();
@@ -120,8 +119,7 @@ public partial class PlayerController : CharacterBody2D
 		if (_gameState.IsDialogueBlocking)
 		{
 			_motor.ClearClickRoute();
-			_inputReader.ClearClickTarget();
-			ClearPendingInteractable();
+			_smartInteract.Cancel();
 			Velocity = Vector2.Zero;
 			UpdateMoveStateAndFacing(false, FacingDirection);
 			return;
@@ -133,43 +131,16 @@ public partial class PlayerController : CharacterBody2D
 		var intent = _inputReader.CurrentIntent;
 		if (intent.Source == MovementInputSource.Keyboard)
 		{
-			ClearPendingInteractable();
-			_motor.ClearClickRoute();
-			_inputReader.ClearClickTarget();
+			_smartInteract.Cancel();
 		}
 
 		var hadClickRoute = _motor.HasClickRoute;
-		var keyboard = intent.Source == MovementInputSource.Keyboard
-			? intent.Direction
-			: Vector2.Zero;
-
-		_motor.Tick(keyboard, (float)delta);
+		_motor.Tick(intent, (float)delta);
 		ApplyMotorPose(updateFacing: _motor.IsMoving);
-
-		if (hadClickRoute && !_motor.HasClickRoute)
-		{
-			_inputReader.ClearClickTarget();
-		}
 
 		Velocity = Vector2.Zero;
 		UpdateMoveStateAndFacing(_motor.IsMoving, _motor.FacingTangent);
-
-		if (_hasPendingInteractable && IsCloseEnoughToInteract(_pendingInteractable))
-		{
-			TryCompletePendingInteraction(forceIfPending: true);
-		}
-		else if (_hasPendingInteractable && hadClickRoute && !_motor.HasClickRoute)
-		{
-			if (IsCloseEnoughToInteract(_pendingInteractable))
-			{
-				TryCompletePendingInteraction(forceIfPending: true);
-			}
-			else
-			{
-				GD.Print("Smart interact: arrived on path but still too far — cancelled");
-				ClearPendingInteractable();
-			}
-		}
+		_smartInteract.Tick(hadClickRoute);
 	}
 
 	private void ApplyMotorPose(bool updateFacing)
@@ -204,9 +175,8 @@ public partial class PlayerController : CharacterBody2D
 			return false;
 		}
 
-		ClearPendingInteractable();
+		_smartInteract.Cancel();
 		_motor.SetClickGoal(worldPosition);
-		_inputReader.SetClickTarget(worldPosition);
 		return true;
 	}
 
@@ -216,60 +186,7 @@ public partial class PlayerController : CharacterBody2D
 
 	private bool RequestInteraction(IInteractable target)
 	{
-		if (!target.CanInteract(this))
-		{
-			return false;
-		}
-
-		if (IsCloseEnoughToInteract(target))
-		{
-			CompleteInteraction(target);
-			return true;
-		}
-
-		var preferred = target.GetInteractionPoint(this);
-		var approachOnPath = _motor.Network.ProjectToNetwork(preferred);
-		_pendingInteractable = target;
-		_hasPendingInteractable = true;
-		_motor.SetClickGoal(approachOnPath);
-		_inputReader.SetClickTarget(approachOnPath);
-
-		GD.Print(
-			$"Smart interact [{target.DisplayName}]: preferred={preferred} → path={approachOnPath} " +
-			$"legs≈{_motor.ClickRouteLegCount} routeLen≈{_motor.RemainingRouteLength():F0}");
-		return true;
-	}
-
-	private void TryCompletePendingInteraction(bool forceIfPending)
-	{
-		if (!_hasPendingInteractable)
-		{
-			return;
-		}
-
-		if (!forceIfPending && !IsCloseEnoughToInteract(_pendingInteractable))
-		{
-			return;
-		}
-
-		if (!_pendingInteractable.CanInteract(this))
-		{
-			ClearPendingInteractable();
-			return;
-		}
-
-		CompleteInteraction(_pendingInteractable);
-	}
-
-	private void CompleteInteraction(IInteractable target)
-	{
-		_inputReader.ClearClickTarget();
-		_motor.ClearClickRoute();
-		ClearPendingInteractable();
-
-		target.PrepareInteraction(this);
-		target.Interact(this);
-		LastInteractionName = target.DisplayName;
+		return _smartInteract.Request(target);
 	}
 
 	/// <summary>Turn to face a world point on the X axis.</summary>
@@ -285,52 +202,9 @@ public partial class PlayerController : CharacterBody2D
 		ApplyFacingToVisual();
 	}
 
-	private void ClearPendingInteractable()
+	internal void RecordInteraction(string displayName)
 	{
-		_hasPendingInteractable = false;
-		_pendingInteractable = null!;
-	}
-
-	private bool IsCloseEnoughToInteract(IInteractable target)
-	{
-		if (IsInInteractionRange(target))
-		{
-			return true;
-		}
-
-		if (target is not Node2D node)
-		{
-			return false;
-		}
-
-		return GlobalPosition.DistanceTo(node.GlobalPosition) <= InteractArriveDistance;
-	}
-
-	private bool IsInInteractionRange(IInteractable target)
-	{
-		if (target is not Node2D)
-		{
-			return false;
-		}
-
-		if (target is Area2D area)
-		{
-			foreach (var overlapping in _interactionArea.GetOverlappingAreas())
-			{
-				if (overlapping == area)
-				{
-					return true;
-				}
-			}
-		}
-
-		if (target is Node2D node)
-		{
-			return Mathf.Abs(node.GlobalPosition.X - GlobalPosition.X) <= InteractRangeX &&
-				Mathf.Abs(node.GlobalPosition.Y - GlobalPosition.Y) <= InteractArriveDistance;
-		}
-
-		return false;
+		LastInteractionName = displayName;
 	}
 
 	private IInteractable PickInteractableAt(Vector2 worldPosition)

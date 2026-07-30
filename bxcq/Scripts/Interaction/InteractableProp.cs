@@ -55,64 +55,48 @@ public partial class InteractableProp : Area2D, IInteractable, ISpeakerAnchor
 		RefreshPromptLabel();
 	}
 
-	public bool CanInteract(PlayerController player)
+	InteractionPlan IInteractable.PlanInteraction(PlayerController player)
 	{
-		var gameState = GetNodeOrNull<GameState>("/root/GameState");
-		return _configurationValid && (gameState == null || !gameState.IsDialogueBlocking);
+		return CanInteract()
+			? InteractionPlan.ApproachFromHorizontal(this, player.GlobalPosition, ApproachOffsetX)
+			: InteractionPlan.Unavailable;
 	}
 
-	public void PrepareInteraction(PlayerController player)
+	bool IInteractable.TryExecuteInteraction(PlayerController player)
 	{
+		if (!CanInteract())
+		{
+			return false;
+		}
+
+		var started = false;
+		if (IsExamineProp)
+		{
+			var presenter = GetTree().GetFirstNodeInGroup("dialogue_presenter") as DialoguePresenter;
+			started = presenter != null && presenter.ShowExamine(AnchorGlobalPosition, "查看", ExamineText);
+		}
+		else if (!string.IsNullOrWhiteSpace(NarrRailStoryPath))
+		{
+			started = GetNode<NarrRailExecution>("/root/NarrRailExecution").StartStory(NarrRailStoryPath);
+		}
+
+		if (!started)
+		{
+			return false;
+		}
+
 		if (IsPerson)
 		{
 			player.FaceToward(GlobalPosition);
-		}
-	}
-
-	public void Interact(PlayerController player)
-	{
-		if (!CanInteract(player))
-		{
-			return;
 		}
 
 		GD.Print($"Interact: {PromptName} ({DescribeRole()})");
 		Modulate = IsExamineProp ? HoverExamine : HoverPerson;
 		Scale = _baseScale * 1.12f;
-
-		var tween = CreateTween();
-		tween.SetParallel(true);
-		tween.TweenProperty(this, "modulate", _baseModulate, 0.45)
-			.SetDelay(0.15);
-		tween.TweenProperty(this, "scale", _baseScale, 0.45)
-			.SetDelay(0.15);
-
-		var presenter = GetTree().GetFirstNodeInGroup("dialogue_presenter") as DialoguePresenter;
-		if (presenter == null)
-		{
-			GD.PushWarning("InteractableProp: DialoguePresenter not found");
-			return;
-		}
-
-		if (IsExamineProp)
-		{
-			// A fixed title distinguishes one-shot Examine text from character dialogue.
-			presenter.ShowExamine(AnchorGlobalPosition, "查看", ExamineText);
-			return;
-		}
-
-		if (string.IsNullOrWhiteSpace(NarrRailStoryPath))
-		{
-			return;
-		}
-
-		presenter.StartStory(NarrRailStoryPath);
-	}
-
-	public Vector2 GetInteractionPoint(PlayerController player)
-	{
-		var side = player.GlobalPosition.X <= GlobalPosition.X ? -1f : 1f;
-		return new Vector2(GlobalPosition.X + side * ApproachOffsetX, GlobalPosition.Y);
+		var tween = CreateTween().SetParallel(true);
+		tween.TweenProperty(this, "modulate", _baseModulate, 0.45).SetDelay(0.15);
+		tween.TweenProperty(this, "scale", _baseScale, 0.45).SetDelay(0.15);
+		return true;
 	}
 
 	public string DescribeRole()
@@ -148,6 +132,12 @@ public partial class InteractableProp : Area2D, IInteractable, ISpeakerAnchor
 		return valid;
 	}
 
+	private bool CanInteract()
+	{
+		var gameState = GetNodeOrNull<GameState>("/root/GameState");
+		return _configurationValid && (gameState == null || !gameState.IsDialogueBlocking);
+	}
+
 	private void OnMouseEntered()
 	{
 		_hovering = true;
@@ -170,7 +160,7 @@ public partial class InteractableProp : Area2D, IInteractable, ISpeakerAnchor
 		RefreshPromptLabel();
 
 		var player = GetTree().GetFirstNodeInGroup("player") as PlayerController;
-		if (player == null || !CanInteract(player))
+		if (player == null || !CanInteract())
 		{
 			Modulate = _baseModulate;
 			return;

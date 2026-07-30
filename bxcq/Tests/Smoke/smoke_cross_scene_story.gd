@@ -2,6 +2,8 @@ extends SceneTree
 ## Cross-scene story-state chain smoke.
 ## Village notice → Study manuscript → Elder unlocks church → Church altar examine.
 
+const NarrRailSmokeDriver = preload("res://Tests/Smoke/narrrail_smoke_driver.gd")
+
 var _frames := 0
 var _phase := 0
 var _advances := 0
@@ -21,6 +23,7 @@ func _process(_delta: float) -> bool:
 		return false
 
 	var presenter := root.get_tree().get_first_node_in_group("dialogue_presenter")
+	var execution := root.get_node("/root/NarrRailExecution")
 	var bridge := root.get_node("/root/NarrRailBridge")
 	var player := root.get_tree().get_first_node_in_group("player")
 
@@ -29,16 +32,16 @@ func _process(_delta: float) -> bool:
 			_phase = 1
 			_advances = 0
 			_frames = 40
-			if not presenter.call("StartStory", "res://Stories/DevPrototype/notice_board_clue.nrstory"):
+			if not execution.call("StartStory", "res://Stories/DevPrototype/notice_board_clue.nrstory"):
 				push_error("story-chain smoke: notice story failed")
 				quit(1)
 				return false
 			print("story-chain smoke: A notice started")
 		1:
-			if _frames % 8 == 0 and _advances < 24 and bool(presenter.get("IsRunning")):
-				presenter.call("SmokeAdvance")
+			if _frames % 8 == 0 and _advances < 24 and bool(execution.get("IsRunning")):
+				NarrRailSmokeDriver.advance(execution)
 				_advances += 1
-			if bool(bridge.call("GetBool", "has_clue_manuscript", false)) and not bool(presenter.get("IsRunning")):
+			if bool(bridge.call("GetBool", "has_clue_manuscript", false)) and not bool(execution.get("IsRunning")):
 				_phase = 2
 				_frames = 0
 				print("story-chain smoke: B clue var OK — go Study")
@@ -63,7 +66,7 @@ func _process(_delta: float) -> bool:
 			_phase = 3
 			_advances = 0
 			_frames = 40
-			if not presenter.call("StartStory", "res://Stories/DevPrototype/study_manuscript.nrstory"):
+			if not execution.call("StartStory", "res://Stories/DevPrototype/study_manuscript.nrstory"):
 				push_error("story-chain smoke: manuscript story failed")
 				quit(1)
 				return false
@@ -71,10 +74,10 @@ func _process(_delta: float) -> bool:
 		3:
 			presenter = root.get_tree().get_first_node_in_group("dialogue_presenter")
 			bridge = root.get_node("/root/NarrRailBridge")
-			if _frames % 8 == 0 and _advances < 24 and bool(presenter.get("IsRunning")):
-				presenter.call("SmokeAdvance")
+			if _frames % 8 == 0 and _advances < 24 and bool(execution.get("IsRunning")):
+				NarrRailSmokeDriver.advance(execution)
 				_advances += 1
-			if bool(bridge.call("GetBool", "found_manuscript", false)) and not bool(presenter.get("IsRunning")):
+			if bool(bridge.call("GetBool", "found_manuscript", false)) and not bool(execution.get("IsRunning")):
 				_phase = 4
 				_frames = 0
 				print("story-chain smoke: D found_manuscript OK — return Village")
@@ -96,26 +99,26 @@ func _process(_delta: float) -> bool:
 			_phase = 5
 			_advances = 0
 			_frames = 40
-			if not presenter.call("StartSampleStory"):
+			if not execution.call("StartStory", "res://Stories/DevPrototype/village_elder_hello.nrstory"):
 				push_error("story-chain smoke: elder story failed")
 				quit(1)
 				return false
 			print("story-chain smoke: E elder found branch started")
 		5:
 			presenter = root.get_tree().get_first_node_in_group("dialogue_presenter")
-			if _frames % 8 == 0 and _advances < 24 and bool(presenter.get("IsRunning")):
-				presenter.call("SmokeAdvance")
+			if _frames % 8 == 0 and _advances < 24 and bool(execution.get("IsRunning")):
+				NarrRailSmokeDriver.advance(execution)
 				_advances += 1
-			var line := String(presenter.get("LastLineText"))
+			var line := String(execution.get("LastLineText"))
 			if line.contains("教堂") or line.contains("手稿"):
 				_phase = 6
 				_frames = 40
 				print("story-chain smoke: F elder found line OK")
 		6:
 			presenter = root.get_tree().get_first_node_in_group("dialogue_presenter")
-			if bool(presenter.get("IsRunning")):
+			if bool(execution.get("IsRunning")):
 				if _frames % 6 == 0:
-					presenter.call("SmokeAdvance")
+					NarrRailSmokeDriver.advance(execution)
 				if _frames > 200:
 					push_error("story-chain smoke: elder never ended")
 					quit(1)
@@ -126,7 +129,7 @@ func _process(_delta: float) -> bool:
 				push_error("story-chain smoke: ToChurch/player missing")
 				quit(1)
 				return false
-			if not bool(church_door.call("CanInteract", player)):
+			if not bool(church_door.get("IsAvailable")):
 				push_error("story-chain smoke: To Church should be unlocked after found manuscript")
 				quit(1)
 				return false

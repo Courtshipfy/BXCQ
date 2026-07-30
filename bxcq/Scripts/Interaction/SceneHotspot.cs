@@ -18,6 +18,7 @@ public partial class SceneHotspot : Area2D, IInteractable
 	private Color _baseModulate = Colors.White;
 	private bool _hovering;
 	public string DisplayName => PromptName;
+	public bool IsAvailable => CanInteract();
 
 	public override void _Ready()
 	{
@@ -53,7 +54,26 @@ public partial class SceneHotspot : Area2D, IInteractable
 	public bool MatchesHotspotId(string hotspotId) =>
 		string.Equals(HotspotId, hotspotId, System.StringComparison.Ordinal);
 
-	public bool CanInteract(PlayerController player)
+	InteractionPlan IInteractable.PlanInteraction(PlayerController player)
+	{
+		return CanInteract()
+			? InteractionPlan.ApproachFromHorizontal(this, player.GlobalPosition, ApproachOffsetX)
+			: InteractionPlan.Unavailable;
+	}
+
+	bool IInteractable.TryExecuteInteraction(PlayerController player)
+	{
+		if (!CanInteract())
+		{
+			return false;
+		}
+
+		GD.Print($"Hotspot -> {TargetScenePath} spawn={TargetSpawnId}");
+		GetNode<SceneTransition>("/root/SceneTransition").GoTo(TargetScenePath, TargetSpawnId);
+		return true;
+	}
+
+	private bool CanInteract()
 	{
 		if (!IsEnabled)
 		{
@@ -78,27 +98,6 @@ public partial class SceneHotspot : Area2D, IInteractable
 		return true;
 	}
 
-	public void PrepareInteraction(PlayerController player)
-	{
-	}
-
-	public void Interact(PlayerController player)
-	{
-		if (!CanInteract(player))
-		{
-			return;
-		}
-
-		GD.Print($"Hotspot -> {TargetScenePath} spawn={TargetSpawnId}");
-		GetNode<SceneTransition>("/root/SceneTransition").GoTo(TargetScenePath, TargetSpawnId);
-	}
-
-	public Vector2 GetInteractionPoint(PlayerController player)
-	{
-		var side = player.GlobalPosition.X <= GlobalPosition.X ? -1f : 1f;
-		return new Vector2(GlobalPosition.X + side * ApproachOffsetX, GlobalPosition.Y);
-	}
-
 	private void OnMouseEntered()
 	{
 		_hovering = true;
@@ -119,7 +118,7 @@ public partial class SceneHotspot : Area2D, IInteractable
 		}
 
 		var player = GetTree().GetFirstNodeInGroup("player") as PlayerController;
-		if (player == null || !CanInteract(player))
+		if (player == null || !CanInteract())
 		{
 			Modulate = _baseModulate;
 			return;

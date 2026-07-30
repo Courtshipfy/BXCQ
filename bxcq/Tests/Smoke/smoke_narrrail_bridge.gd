@@ -1,6 +1,8 @@
 extends SceneTree
 ## Smoke for NarrRail bridge: EmitEvent → NarrRailBridge → camera / hotspot.
 
+const NarrRailSmokeDriver = preload("res://Tests/Smoke/narrrail_smoke_driver.gd")
+
 var _frames := 0
 var _phase := 0
 var _advances := 0
@@ -24,22 +26,22 @@ func _process(_delta: float) -> bool:
 	match _phase:
 		0:
 			_phase = 1
-			var presenter := root.get_tree().get_first_node_in_group("dialogue_presenter")
-			if presenter == null:
-				push_error("bridge smoke: DialoguePresenter missing")
+			var execution := root.get_node_or_null("/root/NarrRailExecution")
+			if execution == null:
+				push_error("bridge smoke: NarrRailExecution missing")
 				quit(1)
 				return false
-			if not presenter.call("StartSampleStory"):
-				push_error("bridge smoke: StartSampleStory failed")
+			if not execution.call("StartStory", "res://Stories/DevPrototype/village_elder_hello.nrstory"):
+				push_error("bridge smoke: StartStory failed")
 				quit(1)
 				return false
 			print("bridge smoke: story started")
 		1:
 			_poll_effects()
 			if _frames % 8 == 0 and _advances < 28:
-				var presenter := root.get_tree().get_first_node_in_group("dialogue_presenter")
-				if presenter != null and presenter.get("IsRunning"):
-					presenter.call("SmokeAdvance")
+				var execution := root.get_node("/root/NarrRailExecution")
+				if execution.get("IsRunning"):
+					NarrRailSmokeDriver.advance(execution)
 					_advances += 1
 			if _frames > 260:
 				if not _saw_camera:
