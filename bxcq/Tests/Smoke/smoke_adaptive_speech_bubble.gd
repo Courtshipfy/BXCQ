@@ -2,10 +2,16 @@ extends SceneTree
 ## Smoke for adaptive nine-patch dialogue sizing and tail-tip anchoring.
 
 var _bubble: Control
+var _speaker_plate: NinePatchRect
+var _speaker_label: Label
 var _frames := 0
 var _phase := 0
 var _short_size := Vector2.ZERO
 var _anchor := Vector2(640, 620)
+var _authored_speaker_anchors := Vector4.ZERO
+var _authored_speaker_offsets := Vector4.ZERO
+var _authored_speaker_label_anchors := Vector4.ZERO
+var _authored_speaker_label_offsets := Vector4.ZERO
 
 func _initialize() -> void:
 	call_deferred("_boot")
@@ -16,6 +22,12 @@ func _boot() -> void:
 		_fail("bubble scene failed to load")
 		return
 	_bubble = scene.instantiate() as Control
+	var authored_speaker_plate := _bubble.get_node("SpeakerPlate") as NinePatchRect
+	var authored_speaker_label := _bubble.get_node("SpeakerPlate/SpeakerLabel") as Label
+	_authored_speaker_anchors = _geometry_anchors(authored_speaker_plate)
+	_authored_speaker_offsets = _geometry_offsets(authored_speaker_plate)
+	_authored_speaker_label_anchors = _geometry_anchors(authored_speaker_label)
+	_authored_speaker_label_offsets = _geometry_offsets(authored_speaker_label)
 	root.add_child(_bubble)
 	await process_frame
 	if not _bubble.is_node_ready():
@@ -23,6 +35,9 @@ func _boot() -> void:
 		return
 	var body := _bubble.get_node_or_null("Body") as NinePatchRect
 	var speaker_plate := _bubble.get_node_or_null("SpeakerPlate") as NinePatchRect
+	var speaker_label := _bubble.get_node_or_null("SpeakerPlate/SpeakerLabel") as Label
+	_speaker_plate = speaker_plate
+	_speaker_label = speaker_label
 	var left_scroll := _bubble.get_node_or_null("LeftScroll") as Control
 	var left_scroll_top := _bubble.get_node_or_null("LeftScroll/Top") as TextureRect
 	var left_scroll_middle := _bubble.get_node_or_null("LeftScroll/Middle") as TextureRect
@@ -37,6 +52,8 @@ func _boot() -> void:
 	if speaker_plate == null or speaker_plate.texture == null:
 		_fail("speaker scroll texture was not loaded")
 		return
+	if not _speaker_layout_is_authored():
+		return
 	if left_scroll == null \
 		or left_scroll_top == null or left_scroll_top.texture == null \
 		or left_scroll_middle == null or left_scroll_middle.texture == null \
@@ -45,14 +62,6 @@ func _boot() -> void:
 		return
 	if speaker_plate.position.y >= body.position.y:
 		_fail("speaker scroll must sit above the dialogue paper")
-		return
-	if speaker_plate.size.x < body.size.x * 0.65:
-		_fail("speaker scroll is too narrow for the reference composition")
-		return
-	var speaker_texture_ratio := float(speaker_plate.texture.get_width()) / float(speaker_plate.texture.get_height())
-	var speaker_rendered_ratio := speaker_plate.size.x / speaker_plate.size.y
-	if absf(speaker_rendered_ratio - speaker_texture_ratio) > 0.08:
-		_fail("speaker scroll aspect ratio was distorted: %s" % speaker_rendered_ratio)
 		return
 	if left_scroll.position.x >= body.position.x:
 		_fail("left scroll must overlap outside the dialogue paper")
@@ -91,7 +100,7 @@ func _process(_delta: float) -> bool:
 				return false
 			_bubble.call(
 				"BeginLine",
-				"史官",
+				"一位名字非常长但不应撑大底板的史官",
 				"这是一段足够长的测试文字，用来验证气泡达到最大宽度后会自动换行，并随着多行文字向下增长，而不是继续横向撑开。")
 			_bubble.call("SetVisibleText", "这是一段足够长的测试文字，用来验证气泡达到最大宽度后会自动换行，并随着多行文字向下增长，而不是继续横向撑开。")
 			_phase = 1
@@ -99,6 +108,8 @@ func _process(_delta: float) -> bool:
 		1:
 			_bubble.call("PlaceAtScreenAnchor", _anchor, Vector2(1280, 720))
 			if _frames < 45:
+				return false
+			if not _speaker_layout_is_authored():
 				return false
 			var long_size: Vector2 = _bubble.get("TargetBodySize")
 			if long_size.x > float(_bubble.get("MaxBubbleWidth")) + 0.5:
@@ -111,10 +122,48 @@ func _process(_delta: float) -> bool:
 			if tip.distance_to(_anchor) > 1.5:
 				_fail("tail tip drifted from speaker anchor: %s" % tip)
 				return false
-			print("adaptive bubble smoke: PASS short=%s long=%s tip=%s" % [_short_size, long_size, tip])
+			var viewport_sizes := [Vector2(1280, 720), Vector2(900, 520)]
+			for viewport_size in viewport_sizes:
+				var edge_anchors := [
+					Vector2(8, 8),
+					Vector2(viewport_size.x - 8, 8),
+					Vector2(8, viewport_size.y - 8),
+					viewport_size - Vector2(8, 8),
+				]
+				for edge_anchor in edge_anchors:
+					_bubble.call("PlaceAtScreenAnchor", edge_anchor, viewport_size)
+					var bubble_rect := Rect2(_bubble.global_position, _bubble.size)
+					if bubble_rect.position.x < 15.5 \
+						or bubble_rect.position.y < 15.5 \
+						or bubble_rect.end.x > viewport_size.x - 15.5 \
+						or bubble_rect.end.y > viewport_size.y - 15.5:
+						_fail(
+							"bubble escaped viewport safe bounds size=%s anchor=%s rect=%s"
+							% [viewport_size, edge_anchor, bubble_rect])
+						return false
+			print("adaptive bubble smoke: PASS short=%s long=%s tip=%s bounded_edges=8" % [_short_size, long_size, tip])
 			quit(0)
 	return false
 
 func _fail(message: String) -> void:
 	push_error("adaptive bubble smoke: %s" % message)
 	quit(1)
+
+func _geometry_anchors(control: Control) -> Vector4:
+	return Vector4(control.anchor_left, control.anchor_top, control.anchor_right, control.anchor_bottom)
+
+func _geometry_offsets(control: Control) -> Vector4:
+	return Vector4(control.offset_left, control.offset_top, control.offset_right, control.offset_bottom)
+
+func _speaker_layout_is_authored() -> bool:
+	if _speaker_plate == null \
+		or _geometry_anchors(_speaker_plate) != _authored_speaker_anchors \
+		or _geometry_offsets(_speaker_plate) != _authored_speaker_offsets:
+		_fail("runtime overwrote the scene-authored speaker plate anchors or offsets")
+		return false
+	if _speaker_label == null \
+		or _geometry_anchors(_speaker_label) != _authored_speaker_label_anchors \
+		or _geometry_offsets(_speaker_label) != _authored_speaker_label_offsets:
+		_fail("runtime overwrote the scene-authored speaker label anchors or offsets")
+		return false
+	return true

@@ -7,6 +7,7 @@ dotnet build BXCQ.csproj --no-restore
 
 tests=(
   smoke_adaptive_speech_bubble.gd
+  smoke_speech_bubble_lab.gd
   smoke_path_network_module.gd
   smoke_path_network_controls.gd
   smoke_narrrail_execution.gd

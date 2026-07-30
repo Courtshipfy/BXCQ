@@ -1,0 +1,320 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://Scripts/Debug/SpeechBubbleLab.cs" id="1_lab"]
+[ext_resource type="PackedScene" path="res://Scenes/UI/AdaptiveSpeechBubble.tscn" id="2_bubble"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_panel"]
+bg_color = Color(0.105, 0.112, 0.125, 0.97)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.28, 0.3, 0.34, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_stage"]
+bg_color = Color(0.145, 0.15, 0.16, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.34, 0.35, 0.37, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_safe"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.42, 0.72, 0.56, 0.48)
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_anchor"]
+bg_color = Color(0.96, 0.45, 0.22, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.86, 0.68, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBox_bounds"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.35, 0.68, 1, 0.72)
+
+[node name="SpeechBubbleLab" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_lab")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.065, 0.07, 0.08, 1)
+
+[node name="Header" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 16.0
+offset_top = 12.0
+offset_right = -16.0
+offset_bottom = 64.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("StyleBox_panel")
+
+[node name="Margin" type="MarginContainer" parent="Header"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 10
+
+[node name="Row" type="HBoxContainer" parent="Header/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="Title" type="Label" parent="Header/Margin/Row"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.94, 0.91, 0.82, 1)
+theme_override_font_sizes/font_size = 22
+text = "气泡完整度测试"
+
+[node name="Subtitle" type="Label" parent="Header/Margin/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.62, 0.65, 0.68, 1)
+text = "左键补全文或进入下一句；右键设置尾部锚点；每句自动切换位置"
+vertical_alignment = 1
+
+[node name="Sidebar" type="PanelContainer" parent="."]
+custom_minimum_size = Vector2(286, 0)
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 76.0
+offset_right = 302.0
+offset_bottom = -16.0
+grow_vertical = 0
+theme_override_styles/panel = SubResource("StyleBox_panel")
+
+[node name="Margin" type="MarginContainer" parent="Sidebar"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 14
+
+[node name="Scroll" type="ScrollContainer" parent="Sidebar/Margin"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Controls" type="VBoxContainer" parent="Sidebar/Margin/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 9
+
+[node name="Scenario" type="Label" parent="Sidebar/Margin/Scroll/Controls"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.76, 0.38, 1)
+theme_override_font_sizes/font_size = 17
+text = "当前：中等 / 中心"
+
+[node name="PlayDemo" type="Button" parent="Sidebar/Margin/Scroll/Controls"]
+layout_mode = 2
+text = "重新播放点击式对话"
+
+[node name="TextTitle" type="Label" parent="Sidebar/Margin/Scroll/Controls"]
+layout_mode = 2
+text = "文字体量"
+
+[node name="TextPresets" type="GridContainer" parent="Sidebar/Margin/Scroll/Controls"]
+layout_mode = 2
+columns = 3
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+
+[node name="Text0" type="Button" parent="Sidebar/Margin/Scroll/Controls/TextPresets"]
+layout_mode = 2
+text = "短句"
+
+[node name="Text1" type="Button" parent="Sidebar/Margin/Scroll/Controls/TextPresets"]
+layout_mode = 2
+text = "单行"
+
+[node name="Text2" type="Button" parent="Sidebar/Margin/Scroll/Controls/TextPresets"]
+layout_mode = 2
+text = "中等"
+
+[node name="Text3" type="Button" parent="Sidebar/Margin/Scroll/Controls/TextPresets"]
+layout_mode = 2
+text = "长文"
+
+[node name="Text4" type="Button" parent="Sidebar/Margin/Scroll/Controls/TextPresets"]
+layout_mode = 2
+text = "超长"
+
+[node name="CustomText" type="TextEdit" parent="Sidebar/Margin/Scroll/Controls"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+placeholder_text = "输入任意测试文字"
+wrap_mode = 1
+
+[node name="ApplyText" type="Button" parent="Sidebar/Margin/Scroll/Controls"]
+layout_mode = 2
+text = "应用自定义文字"
+
+[node name="SpeakerRow" type="HBoxContainer" parent="Sidebar/Margin/Scroll/Controls"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ShowSpeaker" type="CheckButton" parent="Sidebar/Margin/Scroll/Controls/SpeakerRow"]
+layout_mode = 2
+button_pressed = true
+text = "说话人"
+
+[node name="SpeakerName" type="LineEdit" parent="Sidebar/Margin/Scroll/Controls/SpeakerRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "史官"
+placeholder_text = "名称"
+
+[node name="ShowChoices" type="CheckButton" parent="Sidebar/Margin/Scroll/Controls"]
+layout_mode = 2
+text = "附带三条长短不同的选项"
+
+[node name="PositionTitle" type="Label" parent="Sidebar/Margin/Scroll/Controls"]
+layout_mode = 2
+text = "场景位置（尾部锚点）"
+
+[node name="PositionPresets" type="GridContainer" parent="Sidebar/Margin/Scroll/Controls"]
+layout_mode = 2
+columns = 3
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+
+[node name="Position0" type="Button" parent="Sidebar/Margin/Scroll/Controls/PositionPresets"]
+layout_mode = 2
+text = "↖"
+
+[node name="Position1" type="Button" parent="Sidebar/Margin/Scroll/Controls/PositionPresets"]
+layout_mode = 2
+text = "↑"
+
+[node name="Position2" type="Button" parent="Sidebar/Margin/Scroll/Controls/PositionPresets"]
+layout_mode = 2
+text = "↗"
+
+[node name="Position3" type="Button" parent="Sidebar/Margin/Scroll/Controls/PositionPresets"]
+layout_mode = 2
+text = "←"
+
+[node name="Position4" type="Button" parent="Sidebar/Margin/Scroll/Controls/PositionPresets"]
+layout_mode = 2
+text = "•"
+
+[node name="Position5" type="Button" parent="Sidebar/Margin/Scroll/Controls/PositionPresets"]
+layout_mode = 2
+text = "→"
+
+[node name="Position6" type="Button" parent="Sidebar/Margin/Scroll/Controls/PositionPresets"]
+layout_mode = 2
+text = "↙"
+
+[node name="Position7" type="Button" parent="Sidebar/Margin/Scroll/Controls/PositionPresets"]
+layout_mode = 2
+text = "↓"
+
+[node name="Position8" type="Button" parent="Sidebar/Margin/Scroll/Controls/PositionPresets"]
+layout_mode = 2
+text = "↘"
+
+[node name="Diagnostics" type="Label" parent="Sidebar/Margin/Scroll/Controls"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.67, 0.72, 0.76, 1)
+text = "字符数：0\n锚点：0, 0\n主体：0 × 0\n目标：0 × 0\n整体：0 × 0\n视口溢出：无"
+vertical_alignment = 2
+
+[node name="Reset" type="Button" parent="Sidebar/Margin/Scroll/Controls"]
+layout_mode = 2
+text = "恢复默认组合"
+
+[node name="Stage" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 314.0
+offset_top = 76.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StyleBox_stage")
+
+[node name="SafeArea" type="Panel" parent="Stage"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBox_safe")
+
+[node name="StageHint" type="Label" parent="Stage"]
+layout_mode = 0
+offset_left = 36.0
+offset_top = 32.0
+offset_right = 420.0
+offset_bottom = 58.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.47, 0.5, 0.54, 1)
+text = "左键：补全 / 下一句　右键：移动锚点　气泡始终限制在绿色安全区"
+
+[node name="BubbleBounds" type="Panel" parent="Stage"]
+layout_mode = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBox_bounds")
+
+[node name="AdaptiveSpeechBubble" parent="Stage" instance=ExtResource("2_bubble")]
+layout_mode = 0
+ScreenMargin = 24.0
+
+[node name="AnchorMarker" type="Panel" parent="Stage"]
+custom_minimum_size = Vector2(16, 16)
+layout_mode = 0
+offset_right = 16.0
+offset_bottom = 16.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBox_anchor")

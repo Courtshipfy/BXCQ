@@ -10,53 +10,20 @@ namespace BXCQ.NarrRail;
 /// </summary>
 public partial class SpeechBubbleView : Control
 {
-	// All four art layers were authored on one 3100x2149 canvas. The dialogue
-	// paper is the only freely stretched layer; ornamental pieces use one uniform
-	// art scale so their painted proportions stay faithful to the reference.
-	private const float ReferenceBodyWidth = 2719f;
-	private const float ReferenceBodyHeight = 1355f;
-	private const float BodyX = 188f;
-	private const float BodyY = 392f;
-	private const float SpeakerX = 549f;
-	private const float SpeakerY = 0f;
-	private const float SpeakerWidth = 1980f;
-	private const float SpeakerHeight = 484f;
-	private const float LeftScrollX = 0f;
-	private const float LeftScrollY = 281f;
-	private const float LeftScrollWidth = 281f;
-	private const float LeftScrollHeight = 1617f;
-	private const float LeftScrollTopCropHeight = 132f;
-	private const float LeftScrollBottomCropHeight = 136f;
-	private const float LeftScrollCropWidth = 128f;
-	private const float TailX = 1989f;
-	private const float TailY = 1014f;
-	private const float TailWidth = 1083f;
-	private const float TailHeight = 1115f;
-	private const float CompositionWidth = 3072f;
-	private const float TailBodyYRatio = (TailY - BodyY) / ReferenceBodyHeight;
-	private const float LeftScrollTopOverhang = BodyY - LeftScrollY;
-	private const float LeftScrollBottomOverhang =
-		(LeftScrollY + LeftScrollHeight) - (BodyY + ReferenceBodyHeight);
 	private const float TextHeightSafety = 6f;
 
 	[ExportGroup("Width")]
-	[Export] public float MinBubbleWidth { get; set; } = 480f;
 	[Export] public float MaxBubbleWidth { get; set; } = 620f;
-	[Export] public float MinBodyHeight { get; set; } = 150f;
 
 	[ExportGroup("Typography")]
-	[Export] public int SpeakerFontSize { get; set; } = 18;
-	[Export] public int BodyFontSize { get; set; } = 22;
 	[Export] public int ChoiceFontSize { get; set; } = 18;
 
 	[ExportGroup("Layout")]
-	[Export] public float ContentPaddingLeft { get; set; } = 40f;
-	[Export] public float ContentPaddingRight { get; set; } = 40f;
-	[Export] public float ContentPaddingTop { get; set; } = 44f;
-	[Export] public float ContentPaddingBottom { get; set; } = 36f;
 	[Export] public float ChoiceGap { get; set; } = 10f;
 	[Export] public float ChoiceRowGap { get; set; } = 6f;
-	[Export] public Vector2 ShadowOffset { get; set; } = new(8f, 10f);
+
+	[ExportGroup("Screen Placement")]
+	[Export] public float ScreenMargin { get; set; } = 16f;
 
 	[ExportGroup("Animation")]
 	[Export] public float ResizeDuration { get; set; } = 0.3f;
@@ -64,14 +31,9 @@ public partial class SpeechBubbleView : Control
 	public float TextFadeStartRatio { get; set; } = 0.58f;
 	[Export] public float TextFadeDuration { get; set; } = 0.12f;
 
-	private NinePatchRect _shadow = null!;
 	private NinePatchRect _body = null!;
 	private NinePatchRect _speakerPlate = null!;
 	private Label _speakerLabel = null!;
-	private Control _leftScroll = null!;
-	private TextureRect _leftScrollTop = null!;
-	private TextureRect _leftScrollMiddle = null!;
-	private TextureRect _leftScrollBottom = null!;
 	private Control _textClip = null!;
 	private Label _bodyLabel = null!;
 	private Control _choices = null!;
@@ -87,31 +49,47 @@ public partial class SpeechBubbleView : Control
 	private float _measuredChoicesHeight;
 	private bool _hasScreenAnchor;
 	private Vector2 _screenAnchor;
+	private Rect2 _screenBounds;
+	private Vector2 _sceneRootSize;
+	private Vector2 _sceneBodySize;
+	private float _contentPaddingLeft;
+	private float _contentPaddingRight;
+	private float _contentPaddingTop;
+	private float _contentPaddingBottom;
+	private int _bodyFontSize;
 
 	public event Action<int> ChoiceSelected;
 
 	public Vector2 CurrentBodySize => _currentBodySize;
 	public Vector2 TargetBodySize => _targetBodySize;
+	public float MinBubbleWidth => _sceneBodySize.X;
+	public float MinBodyHeight => _sceneBodySize.Y;
 	public bool IsResizing => _resizeTween != null && _resizeTween.IsRunning();
+	public bool WasScreenClamped { get; private set; }
+	public Vector2 ScreenClampOffset { get; private set; }
 	public Vector2 TailTipLocalPosition => GetTailTipLocalPosition();
 	public Vector2 TailTipGlobalPosition => GlobalPosition + GetTailTipLocalPosition();
 
 	public override void _Ready()
 	{
 		MouseFilter = MouseFilterEnum.Ignore;
-		_shadow = GetNode<NinePatchRect>("Shadow");
 		_body = GetNode<NinePatchRect>("Body");
 		_speakerPlate = GetNode<NinePatchRect>("SpeakerPlate");
 		_speakerLabel = GetNode<Label>("SpeakerPlate/SpeakerLabel");
-		_leftScroll = GetNode<Control>("LeftScroll");
-		_leftScrollTop = GetNode<TextureRect>("LeftScroll/Top");
-		_leftScrollMiddle = GetNode<TextureRect>("LeftScroll/Middle");
-		_leftScrollBottom = GetNode<TextureRect>("LeftScroll/Bottom");
 		_textClip = GetNode<Control>("TextClip");
 		_bodyLabel = GetNode<Label>("TextClip/BodyLabel");
 		_choices = GetNode<Control>("TextClip/Choices");
 		_tail = GetNode<TextureRect>("Tail");
 		_font = _bodyLabel.GetThemeFont("font");
+		_bodyFontSize = _bodyLabel.GetThemeFontSize("font_size");
+		_sceneRootSize = Size;
+		_sceneBodySize = _body.Size;
+		_contentPaddingLeft = _textClip.Position.X - _body.Position.X;
+		_contentPaddingRight =
+			(_body.Position.X + _body.Size.X) - (_textClip.Position.X + _textClip.Size.X);
+		_contentPaddingTop = _textClip.Position.Y - _body.Position.Y;
+		_contentPaddingBottom =
+			(_body.Position.Y + _body.Size.Y) - (_textClip.Position.Y + _textClip.Size.Y);
 		_currentBodySize = _body.Size;
 		_targetBodySize = _currentBodySize;
 		ApplyFont(_font);
@@ -128,10 +106,7 @@ public partial class SpeechBubbleView : Control
 			return;
 		}
 
-		_speakerLabel.AddThemeFontOverride("font", _font);
 		_bodyLabel.AddThemeFontOverride("font", _font);
-		_speakerLabel.AddThemeFontSizeOverride("font_size", SpeakerFontSize);
-		_bodyLabel.AddThemeFontSizeOverride("font_size", BodyFontSize);
 		foreach (var button in _choiceButtons)
 		{
 			ApplyChoiceTheme(button);
@@ -151,6 +126,7 @@ public partial class SpeechBubbleView : Control
 	{
 		ClearChoiceNodes();
 		_speakerLabel.Text = speaker ?? "";
+		UpdateSpeakerVisibility();
 		_layoutText = fullText ?? "";
 		_bodyLabel.Text = "";
 		Visible = true;
@@ -218,17 +194,29 @@ public partial class SpeechBubbleView : Control
 		_resizeTween = null!;
 		ClearChoiceNodes();
 		_hasScreenAnchor = false;
+		WasScreenClamped = false;
+		ScreenClampOffset = Vector2.Zero;
 		Visible = false;
 	}
 
 	/// <summary>
-	/// Called by the outer presenter every frame. Recomputes the root transform from
-	/// the animated tail-tip position, so resizing never detaches the tail from speaker.
+	/// Called by the outer presenter every frame. The tail-tip anchor is the preferred
+	/// placement; viewport containment wins when the preferred rect would be clipped.
 	/// </summary>
 	public void PlaceAtScreenAnchor(Vector2 screenAnchor, Vector2 viewportSize)
 	{
+		PlaceAtScreenAnchorInRect(screenAnchor, new Rect2(Vector2.Zero, viewportSize));
+	}
+
+	/// <summary>
+	/// Placement variant for test stages or split-screen safe regions. This is the
+	/// only runtime exception allowed to move the bubble root: child UI geometry
+	/// remains entirely scene-authored.
+	/// </summary>
+	public void PlaceAtScreenAnchorInRect(Vector2 screenAnchor, Rect2 screenBounds)
+	{
 		_screenAnchor = screenAnchor;
-		_ = viewportSize;
+		_screenBounds = screenBounds;
 		_hasScreenAnchor = true;
 		RepositionFromTailTip();
 	}
@@ -267,12 +255,12 @@ public partial class SpeechBubbleView : Control
 
 	private Vector2 MeasureTargetBodySize()
 	{
-		var horizontalPadding = ContentPaddingLeft + ContentPaddingRight;
+		var horizontalPadding = _contentPaddingLeft + _contentPaddingRight;
 		var minContentWidth = Mathf.Max(1f, MinBubbleWidth - horizontalPadding);
 		var maxContentWidth = Mathf.Max(minContentWidth, MaxBubbleWidth - horizontalPadding);
 		var singleLineWidth = string.IsNullOrEmpty(_layoutText)
 			? 0f
-			: _font.GetStringSize(_layoutText, HorizontalAlignment.Left, -1f, BodyFontSize).X;
+			: _font.GetStringSize(_layoutText, HorizontalAlignment.Left, -1f, _bodyFontSize).X;
 
 		var widestChoice = 0f;
 		var choiceRowHeight = _font.GetHeight(ChoiceFontSize) + 16f;
@@ -288,12 +276,12 @@ public partial class SpeechBubbleView : Control
 			minContentWidth,
 			maxContentWidth);
 		_measuredBodyTextHeight = string.IsNullOrEmpty(_layoutText)
-			? _font.GetHeight(BodyFontSize)
+			? _font.GetHeight(_bodyFontSize)
 			: _font.GetMultilineStringSize(
 				_layoutText,
 				HorizontalAlignment.Left,
 				desiredContentWidth,
-				BodyFontSize).Y;
+				_bodyFontSize).Y;
 		_measuredBodyTextHeight += TextHeightSafety;
 
 		_measuredChoicesHeight = _choiceButtons.Count == 0
@@ -308,7 +296,7 @@ public partial class SpeechBubbleView : Control
 		var width = desiredContentWidth + horizontalPadding;
 		var height = Mathf.Max(
 			MinBodyHeight,
-			ContentPaddingTop + contentHeight + ContentPaddingBottom);
+			_contentPaddingTop + contentHeight + _contentPaddingBottom);
 		return new Vector2(width, height);
 	}
 
@@ -318,43 +306,20 @@ public partial class SpeechBubbleView : Control
 			Mathf.Max(MinBubbleWidth, size.X),
 			Mathf.Max(MinBodyHeight, size.Y));
 
-		var artScale = _currentBodySize.X / ReferenceBodyWidth;
-		var bodyPosition = ScaleReference(BodyX, BodyY, artScale);
-
-		_body.Position = bodyPosition;
-		_body.Size = _currentBodySize;
+		// The scene owns every child node's anchors and offsets. Runtime adaptation
+		// changes only the root size; Godot applies the authored responsive layout.
+		Size = _sceneRootSize + (_currentBodySize - _sceneBodySize);
 		_body.PivotOffset = new Vector2(_currentBodySize.X * 0.5f, _currentBodySize.Y);
-		_shadow.Position = bodyPosition + ShadowOffset;
-		_shadow.Size = _currentBodySize;
-		_shadow.PivotOffset = _body.PivotOffset;
-		_speakerPlate.Position = ScaleReference(SpeakerX, SpeakerY, artScale);
-		_speakerPlate.Size = ScaleReference(SpeakerWidth, SpeakerHeight, artScale);
-		LayoutLeftScroll(bodyPosition, artScale);
-		_tail.Position = new Vector2(
-			TailX * artScale,
-			bodyPosition.Y + _currentBodySize.Y * TailBodyYRatio);
-		_tail.Size = ScaleReference(TailWidth, TailHeight, artScale);
-		_tail.FlipH = false;
 
-		var contentWidth = Mathf.Max(1f, _currentBodySize.X - ContentPaddingLeft - ContentPaddingRight);
-		var contentHeight = Mathf.Max(1f, _currentBodySize.Y - ContentPaddingTop - ContentPaddingBottom);
-		_textClip.Position = bodyPosition + new Vector2(ContentPaddingLeft, ContentPaddingTop);
-		_textClip.Size = new Vector2(contentWidth, contentHeight);
-		_bodyLabel.Position = Vector2.Zero;
-		_bodyLabel.Size = new Vector2(contentWidth, _measuredBodyTextHeight);
+		var contentWidth = Mathf.Max(1f, _currentBodySize.X - _contentPaddingLeft - _contentPaddingRight);
+		_bodyLabel.OffsetBottom = _measuredBodyTextHeight;
 
 		var choicesY = _measuredBodyTextHeight + (_choiceButtons.Count > 0 ? ChoiceGap : 0f);
-		_choices.Position = new Vector2(0f, choicesY);
-		_choices.Size = new Vector2(contentWidth, _measuredChoicesHeight);
+		_choices.OffsetTop = choicesY;
+		_choices.OffsetBottom = choicesY + _measuredChoicesHeight;
 		LayoutChoiceButtons(contentWidth);
-		LayoutSpeakerPlate();
+		UpdateSpeakerVisibility();
 
-		var compositionBottom = Mathf.Max(
-			_body.Position.Y + _body.Size.Y,
-			Mathf.Max(
-				_leftScroll.Position.Y + _leftScroll.Size.Y,
-				_tail.Position.Y + _tail.Size.Y));
-		Size = new Vector2(CompositionWidth * artScale, compositionBottom);
 		if (_hasScreenAnchor)
 		{
 			RepositionFromTailTip();
@@ -365,45 +330,15 @@ public partial class SpeechBubbleView : Control
 		}
 	}
 
-	private void LayoutLeftScroll(Vector2 bodyPosition, float artScale)
-	{
-		var scrollWidth = LeftScrollWidth * artScale;
-		var scrollHeight = _currentBodySize.Y
-			+ (LeftScrollTopOverhang + LeftScrollBottomOverhang) * artScale;
-		_leftScroll.Position = new Vector2(
-			LeftScrollX * artScale,
-			bodyPosition.Y - LeftScrollTopOverhang * artScale);
-		_leftScroll.Size = new Vector2(scrollWidth, scrollHeight);
-
-		var textureScale = scrollWidth / LeftScrollCropWidth;
-		var topHeight = LeftScrollTopCropHeight * textureScale;
-		var bottomHeight = LeftScrollBottomCropHeight * textureScale;
-		var middleHeight = Mathf.Max(1f, scrollHeight - topHeight - bottomHeight);
-
-		_leftScrollTop.Position = Vector2.Zero;
-		_leftScrollTop.Size = new Vector2(scrollWidth, topHeight);
-		_leftScrollMiddle.Position = new Vector2(0f, topHeight);
-		_leftScrollMiddle.Size = new Vector2(scrollWidth, middleHeight);
-		_leftScrollBottom.Position = new Vector2(0f, topHeight + middleHeight);
-		_leftScrollBottom.Size = new Vector2(scrollWidth, bottomHeight);
-	}
-
-	private void LayoutSpeakerPlate()
+	/// <summary>
+	/// Speaker plate geometry is authored entirely in the scene. Runtime code may
+	/// change only its content state, never its position or size.
+	/// </summary>
+	private void UpdateSpeakerVisibility()
 	{
 		var hasSpeaker = !string.IsNullOrWhiteSpace(_speakerLabel.Text);
 		_speakerPlate.Visible = hasSpeaker;
 		_speakerLabel.Visible = hasSpeaker;
-		if (!hasSpeaker)
-		{
-			return;
-		}
-
-		var horizontalInset = _speakerPlate.Size.X * 0.08f;
-		var verticalInset = _speakerPlate.Size.Y * 0.1f;
-		_speakerLabel.Position = _speakerPlate.Position + new Vector2(horizontalInset, verticalInset);
-		_speakerLabel.Size = new Vector2(
-			Mathf.Max(1f, _speakerPlate.Size.X - horizontalInset * 2f),
-			Mathf.Max(1f, _speakerPlate.Size.Y - verticalInset * 2f));
 	}
 
 	private void LayoutChoiceButtons(float contentWidth)
@@ -421,7 +356,29 @@ public partial class SpeechBubbleView : Control
 	private void RepositionFromTailTip()
 	{
 		LayoutTailAndPivot();
-		GlobalPosition = _screenAnchor - GetTailTipLocalPosition();
+		var preferredPosition = _screenAnchor - GetTailTipLocalPosition();
+		var resolvedPosition = ClampBubblePosition(preferredPosition, _screenBounds);
+		ScreenClampOffset = resolvedPosition - preferredPosition;
+		WasScreenClamped = ScreenClampOffset.LengthSquared() > 0.01f;
+		GlobalPosition = resolvedPosition;
+	}
+
+	private Vector2 ClampBubblePosition(Vector2 preferredPosition, Rect2 bounds)
+	{
+		var margin = Mathf.Max(0f, ScreenMargin);
+		var safeMin = bounds.Position + new Vector2(margin, margin);
+		var safeMax = bounds.Position + bounds.Size - new Vector2(margin, margin) - Size;
+
+		// Normal game viewports are larger than the bubble. If a debug viewport is
+		// smaller, pin to its safe origin; the content remains deterministic instead
+		// of oscillating between contradictory min/max constraints.
+		var resolvedX = safeMax.X >= safeMin.X
+			? Mathf.Clamp(preferredPosition.X, safeMin.X, safeMax.X)
+			: safeMin.X;
+		var resolvedY = safeMax.Y >= safeMin.Y
+			? Mathf.Clamp(preferredPosition.Y, safeMin.Y, safeMax.Y)
+			: safeMin.Y;
+		return new Vector2(resolvedX, resolvedY);
 	}
 
 	private void LayoutTailAndPivot()
@@ -484,6 +441,4 @@ public partial class SpeechBubbleView : Control
 	private static Color WithAlpha(Color color, float alpha) =>
 		new(color.R, color.G, color.B, alpha);
 
-	private static Vector2 ScaleReference(float x, float y, float scale) =>
-		new(x * scale, y * scale);
 }

@@ -9,6 +9,7 @@
 - NarrRail Execution 的故事启动、推进、选择与结束，通过正式执行接口验证，不借用 Dialogue Presenter 的测试方法
 - NarrRail Execution 无需 Location 或 Dialogue Presenter 即可运行纯剧情分支
 - 九宫格气泡的短句收窄、长句换行增长、尺寸补间和尾巴锚定
+- 气泡实验台的逐字显示、点击补全、点击换句、跨位置演示与安全区约束
 - 村庄、书房、教堂的场景机制一致性和跨场景剧情链
 
 从 Godot 工程根目录运行：
