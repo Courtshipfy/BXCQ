@@ -5,6 +5,7 @@
 - Path Network 的 WASD、Junction 方向择路、点击移动和 Smart Interact
 - Person、Examine、Investigate、Hotspot
 - NarrRail 对话、变量、世界事件和演出事件
+- 九宫格气泡的短句收窄、长句换行增长、尺寸补间和尾巴锚定
 - 村庄、书房、教堂的场景机制一致性和跨场景剧情链
 
 从 Godot 工程根目录运行：

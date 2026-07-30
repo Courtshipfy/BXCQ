@@ -1,0 +1,146 @@
+[gd_scene format=3 uid="uid://bltjqvhyyf5nw"]
+
+[ext_resource type="Script" uid="uid://c8fbiodrs183a" path="res://Scripts/NarrRail/SpeechBubbleView.cs" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://bxncioogqvq1j" path="res://Assets/UI/Dialogue/DialogueBody.png" id="2_body"]
+[ext_resource type="Texture2D" uid="uid://ch6kk7ns2whqk" path="res://Assets/UI/Dialogue/SpeakerPlate.png" id="3_plate"]
+[ext_resource type="Texture2D" uid="uid://b8xielv4411p3" path="res://Assets/UI/Dialogue/DialogueTail.png" id="4_tail"]
+[ext_resource type="Texture2D" uid="uid://dy027ielv2xgx" path="res://Assets/UI/Dialogue/LeftScroll.png" id="5_left_scroll"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_left_top"]
+atlas = ExtResource("5_left_scroll")
+region = Rect2(0, 0, 128, 132)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_left_middle"]
+atlas = ExtResource("5_left_scroll")
+region = Rect2(0, 132, 128, 468)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_left_bottom"]
+atlas = ExtResource("5_left_scroll")
+region = Rect2(0, 600, 128, 136)
+
+[node name="AdaptiveSpeechBubble" type="Control" unique_id=1108028639]
+custom_minimum_size = Vector2(542, 335)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 542.0
+offset_bottom = 335.0
+mouse_filter = 2
+script = ExtResource("1_script")
+
+[node name="Shadow" type="NinePatchRect" parent="." unique_id=238121798]
+modulate = Color(0.08, 0.06, 0.035, 0.28)
+layout_mode = 0
+offset_left = 41.0
+offset_top = 79.0
+offset_right = 521.0
+offset_bottom = 229.0
+texture = ExtResource("2_body")
+patch_margin_left = 48
+patch_margin_top = 46
+patch_margin_right = 48
+patch_margin_bottom = 48
+
+[node name="Body" type="NinePatchRect" parent="." unique_id=1246993914]
+layout_mode = 0
+offset_left = 33.0
+offset_top = 69.0
+offset_right = 513.0
+offset_bottom = 219.0
+texture = ExtResource("2_body")
+patch_margin_left = 48
+patch_margin_top = 46
+patch_margin_right = 48
+patch_margin_bottom = 48
+
+[node name="SpeakerPlate" type="NinePatchRect" parent="." unique_id=72502109]
+layout_mode = 0
+offset_left = 209.0
+offset_top = 38.0
+offset_right = 350.0
+offset_bottom = 85.0
+texture = ExtResource("3_plate")
+patch_margin_left = 28
+patch_margin_top = 18
+patch_margin_right = 28
+patch_margin_bottom = 18
+
+[node name="SpeakerLabel" type="Label" parent="SpeakerPlate" unique_id=1527687670]
+layout_mode = 0
+offset_left = 35.0
+offset_top = 11.0
+offset_right = 98.0
+offset_bottom = 34.0
+theme_override_colors/font_color = Color(0.94, 0.91, 0.78, 1)
+theme_override_colors/font_shadow_color = Color(0.08, 0.11, 0.07, 0.7)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 2
+text = "Speaker"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LeftScroll" type="Control" parent="." unique_id=1559433532]
+anchors_preset = 0
+offset_top = 49.0
+offset_right = 50.0
+offset_bottom = 246.0
+mouse_filter = 2
+
+[node name="Top" type="TextureRect" parent="LeftScroll" unique_id=1730710975]
+layout_mode = 0
+offset_right = 50.0
+offset_bottom = 52.0
+mouse_filter = 2
+texture = SubResource("AtlasTexture_left_top")
+expand_mode = 1
+
+[node name="Middle" type="TextureRect" parent="LeftScroll" unique_id=531409933]
+layout_mode = 0
+offset_top = 52.0
+offset_right = 50.0
+offset_bottom = 144.0
+mouse_filter = 2
+texture = SubResource("AtlasTexture_left_middle")
+expand_mode = 1
+
+[node name="Bottom" type="TextureRect" parent="LeftScroll" unique_id=314583556]
+layout_mode = 0
+offset_top = 144.0
+offset_right = 50.0
+offset_bottom = 197.0
+mouse_filter = 2
+texture = SubResource("AtlasTexture_left_bottom")
+expand_mode = 1
+
+[node name="TextClip" type="Control" parent="." unique_id=820006901]
+clip_contents = true
+anchors_preset = 0
+offset_left = 73.0
+offset_top = 113.0
+offset_right = 473.0
+offset_bottom = 183.0
+mouse_filter = 2
+
+[node name="BodyLabel" type="Label" parent="TextClip" unique_id=825761946]
+layout_mode = 0
+offset_right = 400.0
+offset_bottom = 32.0
+theme_override_colors/font_color = Color(0.17, 0.115, 0.065, 1)
+text = "Dialogue"
+autowrap_mode = 3
+
+[node name="Choices" type="Control" parent="TextClip" unique_id=1905292622]
+anchors_preset = 0
+offset_top = 38.0
+offset_right = 400.0
+offset_bottom = 60.0
+mouse_filter = 1
+
+[node name="Tail" type="TextureRect" parent="." unique_id=1908027066]
+layout_mode = 0
+offset_left = 351.0
+offset_top = 138.0
+offset_right = 542.0
+offset_bottom = 335.0
+mouse_filter = 2
+texture = ExtResource("4_tail")
+expand_mode = 1

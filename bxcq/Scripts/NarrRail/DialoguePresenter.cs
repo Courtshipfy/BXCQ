@@ -9,6 +9,8 @@ namespace BXCQ.NarrRail;
 /// </summary>
 public partial class DialoguePresenter : CanvasLayer
 {
+	private const string BubbleScenePath = "res://Scenes/UI/AdaptiveSpeechBubble.tscn";
+
 	[Export] public string SampleStoryPath { get; set; } = "res://Stories/DevPrototype/village_elder_hello.nrstory";
 	[Export] public DialogueUiDefaults Defaults { get; set; }
 
@@ -37,7 +39,15 @@ public partial class DialoguePresenter : CanvasLayer
 		Defaults ??= GD.Load<DialogueUiDefaults>("res://Resources/Ui/DialogueUiDefaults.tres");
 		_gameState = GetNode<GameState>("/root/GameState");
 
-		_bubble = new SpeechBubbleView { Name = "SpeechBubble" };
+		var bubbleScene = GD.Load<PackedScene>(BubbleScenePath);
+		if (bubbleScene == null)
+		{
+			GD.PushError($"DialoguePresenter: bubble scene missing at {BubbleScenePath}");
+			return;
+		}
+
+		_bubble = bubbleScene.Instantiate<SpeechBubbleView>();
+		_bubble.Name = "SpeechBubble";
 		AddChild(_bubble);
 		if (Defaults?.DialogueFont != null)
 		{
@@ -92,7 +102,8 @@ public partial class DialoguePresenter : CanvasLayer
 		LastLineText = body;
 		_worldAnchor = worldAnchor;
 		_bubble.ClearChoices();
-		_bubble.ShowLine(_speakerId, _fullLine);
+		_bubble.BeginLine(_speakerId, _fullLine);
+		_bubble.SetVisibleText(_fullLine);
 		_gameState.IsDialogueBlocking = true;
 		UpdateBubblePlacement();
 		GD.Print($"Examine: [{_speakerId}] {_fullLine}");
@@ -178,7 +189,7 @@ public partial class DialoguePresenter : CanvasLayer
 		if (next != _visibleChars)
 		{
 			_visibleChars = next;
-			_bubble.ShowLine(_speakerId, _fullLine[.._visibleChars]);
+			_bubble.SetVisibleText(_fullLine[.._visibleChars]);
 		}
 
 		if (_visibleChars >= _fullLine.Length)
@@ -212,7 +223,7 @@ public partial class DialoguePresenter : CanvasLayer
 		{
 			_visibleChars = _fullLine.Length;
 			_revealComplete = true;
-			_bubble.ShowLine(_speakerId, _fullLine);
+			_bubble.SetVisibleText(_fullLine);
 			GetViewport().SetInputAsHandled();
 			return;
 		}
@@ -224,7 +235,6 @@ public partial class DialoguePresenter : CanvasLayer
 	private void OnLineChanged(Dictionary payload)
 	{
 		_waitingChoice = false;
-		_bubble.ClearChoices();
 		_speakerId = payload.ContainsKey("speakerId") ? payload["speakerId"].AsString() : "";
 		_fullLine = payload.ContainsKey("textKey") ? payload["textKey"].AsString() : "";
 		LastLineText = _fullLine;
@@ -232,7 +242,7 @@ public partial class DialoguePresenter : CanvasLayer
 		_typeAccumulator = 0f;
 		_revealComplete = string.IsNullOrEmpty(_fullLine);
 		_worldAnchor = SpeakerResolver.ResolveAnchor(GetTree(), _speakerId, _player);
-		_bubble.ShowLine(_speakerId, "");
+		_bubble.BeginLine(_speakerId, _fullLine);
 		UpdateBubblePlacement();
 		GD.Print($"Dialogue line: [{_speakerId}] {_fullLine}");
 	}
@@ -348,7 +358,7 @@ public partial class DialoguePresenter : CanvasLayer
 		{
 			_visibleChars = _fullLine.Length;
 			_revealComplete = true;
-			_bubble.ShowLine(_speakerId, _fullLine);
+			_bubble.SetVisibleText(_fullLine);
 			return;
 		}
 

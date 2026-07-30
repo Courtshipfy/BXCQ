@@ -6,6 +6,7 @@ BXCQ_GODOT_BIN="${BXCQ_GODOT_BIN:-/Applications/Godot 4.7 .NET.app/Contents/MacO
 dotnet build BXCQ.csproj --no-restore
 
 tests=(
+  smoke_adaptive_speech_bubble.gd
   smoke_path_network_controls.gd
   smoke_examine_investigate.gd
   smoke_interaction_roles.gd

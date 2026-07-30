@@ -18,9 +18,8 @@ Godot 工程根目录为 [`bxcq`](bxcq/)。仓库根目录的 `arts/` 保存原�
 
 ## NarrRail
 
-开发环境中的 `bxcq/addons/narrrail` 链接到：
-
-`/Users/courtship/Projects/NarrRail-Godot-Plugin/narrrail`
+`bxcq/addons/narrrail` 已包含可直接运行的 NarrRail 插件快照，不依赖本机绝对路径。
+上游版本与更新方式记录在 `bxcq/addons/narrrail/UPSTREAM.md`。
 
 正式 NarrRail 故事仓库尚未配置。`bxcq/Stories/DevPrototype/` 只用于玩法回归。
 
