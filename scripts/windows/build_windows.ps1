@@ -38,38 +38,51 @@ function Download-File([string]$Uri, [string]$Destination) {
     }
 }
 
-function Get-GodotReleaseInfo {
+function New-GodotReleaseInfo([int]$Major, [int]$Minor, [int]$Patch) {
+    $SdkVersion = "$Major.$Minor.$Patch"
+    if ($Patch -eq 0) { $ReleaseVersion = "$Major.$Minor" } else { $ReleaseVersion = $SdkVersion }
+
+    return @{
+        Major = $Major
+        Minor = $Minor
+        Patch = $Patch
+        SdkVersion = $SdkVersion
+        VersionPrefix = "$ReleaseVersion.stable."
+        ReleaseTag = "$ReleaseVersion-stable"
+        TemplateVersion = "$ReleaseVersion.stable.mono"
+    }
+}
+
+function Get-ProjectGodotReleaseInfo {
     $Content = Get-Content -Raw $CsProject
     $Match = [regex]::Match($Content, 'Godot\.NET\.Sdk/(\d+)\.(\d+)\.(\d+)')
     if (-not $Match.Success) {
         throw "Cannot determine the Godot version from BXCQ.csproj. Expected Godot.NET.Sdk/x.y.z."
     }
 
-    $Major = [int]$Match.Groups[1].Value
-    $Minor = [int]$Match.Groups[2].Value
-    $Patch = [int]$Match.Groups[3].Value
-    $SdkVersion = "$Major.$Minor.$Patch"
-    if ($Patch -eq 0) { $ReleaseVersion = "$Major.$Minor" } else { $ReleaseVersion = $SdkVersion }
-    $VersionPrefix = "$ReleaseVersion.stable."
-
-    return @{
-        SdkVersion = $SdkVersion
-        VersionPrefix = $VersionPrefix
-        ReleaseTag = "$ReleaseVersion-stable"
-        TemplateVersion = "$ReleaseVersion.stable.mono"
-    }
+    return New-GodotReleaseInfo ([int]$Match.Groups[1].Value) ([int]$Match.Groups[2].Value) ([int]$Match.Groups[3].Value)
 }
 
-function Test-GodotVersion([string]$Executable, [string]$VersionPrefix) {
-    if (-not (Test-Path $Executable)) { return $false }
+function Get-InstalledGodotReleaseInfo([string]$Executable) {
+    if (-not $Executable -or -not (Test-Path $Executable)) { return $null }
     try {
         $Version = (& $Executable --version 2>$null | Select-Object -First 1)
-        return $Version -and $Version.StartsWith($VersionPrefix) -and $Version.Contains("mono")
+        $Match = [regex]::Match($Version, '^(\d+)\.(\d+)(?:\.(\d+))?\.stable\.mono')
+        if (-not $Match.Success) { return $null }
+
+        $Patch = 0
+        if ($Match.Groups[3].Success) { $Patch = [int]$Match.Groups[3].Value }
+        return New-GodotReleaseInfo ([int]$Match.Groups[1].Value) ([int]$Match.Groups[2].Value) $Patch
     }
-    catch { return $false }
+    catch { return $null }
 }
 
-function Find-SystemGodot([string]$VersionPrefix) {
+function Test-SupportedGodot([string]$Executable) {
+    $Info = Get-InstalledGodotReleaseInfo $Executable
+    return $Info -and $Info.Major -eq 4 -and $Info.Minor -ge 7
+}
+
+function Find-SystemGodot {
     $Candidates = @()
     if ($env:GODOT_EXE) { $Candidates += $env:GODOT_EXE }
 
@@ -84,9 +97,14 @@ function Find-SystemGodot([string]$VersionPrefix) {
     if ($env:ProgramFiles) {
         $Candidates += Get-ChildItem -Path (Join-Path $env:ProgramFiles "Godot*") -Filter "*mono*console.exe" -Recurse -ErrorAction SilentlyContinue | ForEach-Object FullName
     }
+    if ($env:USERPROFILE) {
+        foreach ($Folder in @("Downloads", "Desktop")) {
+            $Candidates += Get-ChildItem -Path (Join-Path $env:USERPROFILE $Folder) -Filter "*mono*console.exe" -Recurse -ErrorAction SilentlyContinue | ForEach-Object FullName
+        }
+    }
 
     foreach ($Candidate in ($Candidates | Select-Object -Unique)) {
-        if (Test-GodotVersion $Candidate $VersionPrefix) { return $Candidate }
+        if (Test-SupportedGodot $Candidate) { return $Candidate }
     }
     return $null
 }
@@ -94,7 +112,9 @@ function Find-SystemGodot([string]$VersionPrefix) {
 function Install-LocalGodot($ReleaseInfo) {
     $GodotRoot = Join-Path $ToolsRoot ("godot\" + $ReleaseInfo.ReleaseTag)
     $Existing = Get-ChildItem -Path $GodotRoot -Filter "*_console.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($Existing -and (Test-GodotVersion $Existing.FullName $ReleaseInfo.VersionPrefix)) {
+    $ExistingInfo = $null
+    if ($Existing) { $ExistingInfo = Get-InstalledGodotReleaseInfo $Existing.FullName }
+    if ($ExistingInfo -and $ExistingInfo.ReleaseTag -eq $ReleaseInfo.ReleaseTag) {
         New-Item -ItemType File -Force -Path (Join-Path $Existing.DirectoryName "_sc_") | Out-Null
         return $Existing.FullName
     }
@@ -186,6 +206,19 @@ function Invoke-Checked([string]$Executable, [string[]]$Arguments, [string]$Desc
     if ($LASTEXITCODE -ne 0) { throw "$Description failed (exit $LASTEXITCODE)." }
 }
 
+function Set-TemporaryGodotSdk([string]$SdkVersion) {
+    $Content = Get-Content -Raw $CsProject
+    $SdkPattern = [regex]'Godot\.NET\.Sdk/\d+\.\d+\.\d+'
+    $Adjusted = $SdkPattern.Replace($Content, "Godot.NET.Sdk/$SdkVersion", 1)
+    if ($Adjusted -eq $Content) { throw "Could not update the temporary Godot SDK version in BXCQ.csproj." }
+
+    $Utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+    [IO.File]::WriteAllText($CsProject, $Adjusted, $Utf8NoBom)
+}
+
+$OriginalCsProject = $null
+$CsProjectWasAdjusted = $false
+$ScriptExitCode = 0
 try {
     Write-Host "BXCQ Windows packager" -ForegroundColor Green
     Write-Host "Project: $ProjectRoot"
@@ -195,8 +228,8 @@ try {
     if (-not (Test-Path $SolutionFile)) { throw "BXCQ.sln is missing. Godot cannot export a C# project without its solution file." }
     if (-not (Test-Path (Join-Path $ProjectRoot "export_presets.cfg"))) { throw "export_presets.cfg is missing." }
 
-    $ReleaseInfo = Get-GodotReleaseInfo
-    Write-Host "Required Godot .NET SDK: $($ReleaseInfo.SdkVersion)"
+    $ProjectReleaseInfo = Get-ProjectGodotReleaseInfo
+    Write-Host "Project Godot .NET SDK: $($ProjectReleaseInfo.SdkVersion)"
 
     $DotNetExe = Resolve-DotNet
     $env:DOTNET_ROOT = Split-Path $DotNetExe -Parent
@@ -205,16 +238,29 @@ try {
     $env:DOTNET_NOLOGO = "1"
     Write-Host ".NET: $DotNetExe"
 
-    $GodotExe = Find-SystemGodot $ReleaseInfo.VersionPrefix
+    $GodotExe = Find-SystemGodot
     $IsLocalGodot = $false
     if (-not $GodotExe) {
-        $GodotExe = Install-LocalGodot $ReleaseInfo
+        $GodotExe = Install-LocalGodot $ProjectReleaseInfo
         $IsLocalGodot = $true
     }
     elseif ($GodotExe.StartsWith($ToolsRoot, [StringComparison]::OrdinalIgnoreCase)) {
         $IsLocalGodot = $true
     }
     Write-Host "Godot: $GodotExe"
+
+    $ReleaseInfo = Get-InstalledGodotReleaseInfo $GodotExe
+    if (-not $ReleaseInfo -or $ReleaseInfo.Major -ne 4 -or $ReleaseInfo.Minor -lt 7) {
+        throw "Godot must be a stable Mono build from the 4.x series, version 4.7 or newer."
+    }
+    Write-Host "Selected Godot version: $($ReleaseInfo.SdkVersion)"
+
+    if ($ProjectReleaseInfo.SdkVersion -ne $ReleaseInfo.SdkVersion) {
+        Write-Step "Temporarily matching the C# SDK to Godot $($ReleaseInfo.SdkVersion)"
+        $OriginalCsProject = Get-Content -Raw $CsProject
+        Set-TemporaryGodotSdk $ReleaseInfo.SdkVersion
+        $CsProjectWasAdjusted = $true
+    }
 
     $TemplateRoot = Get-TemplateRoot $GodotExe $IsLocalGodot $ReleaseInfo.TemplateVersion
     Install-ExportTemplates $ReleaseInfo $TemplateRoot
@@ -261,11 +307,25 @@ try {
     catch {
         Write-Warning "The package was created, but Explorer could not be opened automatically."
     }
-    exit 0
 }
 catch {
     Write-Host ""
     Write-Host "ERROR: $($_.Exception.Message)" -ForegroundColor Red
     Write-Host "Downloaded tools and partial build output were kept so the next attempt can continue." -ForegroundColor Yellow
-    exit 1
+    $ScriptExitCode = 1
 }
+finally {
+    if ($CsProjectWasAdjusted -and $null -ne $OriginalCsProject) {
+        try {
+            $Utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+            [IO.File]::WriteAllText($CsProject, $OriginalCsProject, $Utf8NoBom)
+            Write-Host "Restored the original BXCQ.csproj SDK version."
+        }
+        catch {
+            Write-Host "ERROR: Could not restore BXCQ.csproj: $($_.Exception.Message)" -ForegroundColor Red
+            $ScriptExitCode = 1
+        }
+    }
+}
+
+exit $ScriptExitCode
