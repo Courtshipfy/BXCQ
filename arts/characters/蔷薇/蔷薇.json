@@ -1,0 +1,21 @@
+{"bones":[{"name":"root"}],"slots":[
+{"name":"shou y2","bone":"root","attachment":"shou y2"},
+{"name":"s","bone":"root","attachment":"s"},
+{"name":"shenti2","bone":"root","attachment":"shenti2"},
+{"name":"shengti1","bone":"root","attachment":"shengti1"},
+{"name":"shou z","bone":"root","attachment":"shou z"},
+{"name":"s -z","bone":"root","attachment":"s -z"},
+{"name":"shou y","bone":"root","attachment":"shou y"},
+{"name":"s-y","bone":"root","attachment":"s-y"},
+{"name":"tou","bone":"root","attachment":"tou"},
+],"skins":{"default":{
+"shou y2":{"shou y2":{"x":221.5,"y":1169,"width":111,"height":281}},
+"s":{"s":{"x":367,"y":560.5,"width":734,"height":928}},
+"shenti2":{"shenti2":{"x":375,"y":749,"width":534,"height":1455}},
+"shengti1":{"shengti1":{"x":338,"y":940.5,"width":137,"height":319}},
+"shou z":{"shou z":{"x":248.5,"y":834.5,"width":199,"height":478}},
+"s -z":{"s -z":{"x":231,"y":864.5,"width":364,"height":360}},
+"shou y":{"shou y":{"x":445.5,"y":953,"width":294,"height":719}},
+"s-y":{"s-y":{"x":544.5,"y":871.5,"width":293,"height":395}},
+"tou":{"tou":{"x":379.5,"y":1534,"width":321,"height":290}},
+}}, "animations": { "animation": {} }}

@@ -1,0 +1,23 @@
+{"bones":[{"name":"root"}],"slots":[
+{"name":"shoubi4","bone":"root","attachment":"shoubi4"},
+{"name":"shenti2","bone":"root","attachment":"shenti2"},
+{"name":"s","bone":"root","attachment":"s"},
+{"name":"shoubi3","bone":"root","attachment":"shoubi3"},
+{"name":"shenti","bone":"root","attachment":"shenti"},
+{"name":"shou2","bone":"root","attachment":"shou2"},
+{"name":"shoubi-2","bone":"root","attachment":"shoubi-2"},
+{"name":"shou","bone":"root","attachment":"shou"},
+{"name":"shoubi-1","bone":"root","attachment":"shoubi-1"},
+{"name":"tou","bone":"root","attachment":"tou"},
+],"skins":{"default":{
+"shoubi4":{"shoubi4":{"x":147,"y":1214.5,"width":210,"height":502}},
+"shenti2":{"shenti2":{"x":428.5,"y":483.5,"width":664,"height":967}},
+"s":{"s":{"x":422.5,"y":684.5,"width":553,"height":567}},
+"shoubi3":{"shoubi3":{"x":710,"y":1211.5,"width":158,"height":547}},
+"shenti":{"shenti":{"x":424.5,"y":1291.5,"width":526,"height":687}},
+"shou2":{"shou2":{"x":320,"y":1192,"width":177,"height":217}},
+"shoubi-2":{"shoubi-2":{"x":160,"y":1042,"width":285,"height":231}},
+"shou":{"shou":{"x":445.5,"y":1187,"width":171,"height":233}},
+"shoubi-1":{"shoubi-1":{"x":624,"y":1027.5,"width":316,"height":238}},
+"tou":{"tou":{"x":413.5,"y":1656,"width":237,"height":541}},
+}}, "animations": { "animation": {} }}

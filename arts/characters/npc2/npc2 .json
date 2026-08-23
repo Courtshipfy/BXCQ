@@ -1,0 +1,15 @@
+{"bones":[{"name":"root"}],"slots":[
+{"name":"shoubi3","bone":"root","attachment":"shoubi3"},
+{"name":"shjenti","bone":"root","attachment":"shjenti"},
+{"name":"tuo","bone":"root","attachment":"tuo"},
+{"name":"s","bone":"root","attachment":"s"},
+{"name":"shou1","bone":"root","attachment":"shou1"},
+{"name":"shou2","bone":"root","attachment":"shou2"},
+],"skins":{"default":{
+"shoubi3":{"shoubi3":{"x":177,"y":1138,"width":184,"height":306}},
+"shjenti":{"shjenti":{"x":395,"y":696,"width":633,"height":1392}},
+"tuo":{"tuo":{"x":427,"y":1486.5,"width":311,"height":515}},
+"s":{"s":{"x":292,"y":1208,"width":103,"height":318}},
+"shou1":{"shou1":{"x":189,"y":874.5,"width":339,"height":543}},
+"shou2":{"shou2":{"x":641.5,"y":866.5,"width":305,"height":927}},
+}}, "animations": { "animation": {} }}
